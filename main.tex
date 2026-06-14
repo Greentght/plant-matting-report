@@ -39,11 +39,11 @@
 
 	%填写中文摘要内容和关键字
 	\begin{cnabstract}{图像抠图；深度学习；植物图像；方法复现}
-		图像抠图旨在预测图像中每个像素的前景透明度（alpha matte），从而将目标从背景中自然分离出来，是图像编辑与视觉认知中的一项基础任务。近年来，基于深度学习与大规模预训练模型的抠图方法取得了显著进展。本文面向植物图像这一具体场景，在统一评测协议下复现并对比了四种范式迥异的代表性方法：基于三分图（trimap）精修的 ViTMatte、零样本可提示的 ZIM、扩散式的 SDMatte，以及自动与交互统一的 SMat。所有模型在 PM 植物数据集（150 张，统一缩放至 $1024^2$）上以完全相同的真值评测，并用统一 trimap 定义 Unknown 区域，同时报告全图与 Unknown 区域两套 SAD/MSE/MAD 指标。实验表明：在给定 trimap 先验时，ViTMatte 取得最佳的全图精度（SAD 25.5）；在三种 trimap-free 方法中，扩散式 SDMatte 表现最稳健（全图 SAD 44.3、零图形-背景反转）。我们进一步在各模型原始论文基准（AIM-500、MicroMat-3K）上做了跨数据集自验，结果与原文趋势相符，说明实现与评测流程没有明显偏离；据此说明植物场景下的较高误差主要源于数据域特性（主体满框、类内相似干扰）而非模型本身。
+		图像抠图旨在预测图像中每个像素的前景透明度（alpha matte），从而将目标从背景中自然分离出来，是图像编辑与视觉认知中的一项基础任务。近年来，基于深度学习与大规模预训练模型的抠图方法取得了显著进展。本文面向植物图像这一具体场景，在统一评测协议下复现并对比了四种范式迥异的代表性方法：基于三分图（trimap）精修的 ViTMatte、零样本可提示的 ZIM、扩散式的 SDMatte，以及自动与交互统一的 SMat。所有模型在 PM 植物数据集（150 张，统一缩放至 $1024^2$）上以完全相同的真值评测，并用统一 trimap 定义 Unknown 区域，同时报告全图与 Unknown 区域两套 SAD/MSE/MAD 指标。实验表明：在给定 trimap 先验时，ViTMatte 取得最佳的全图精度（SAD 25.1）；在三种 trimap-free 方法中，扩散式 SDMatte 表现最稳健（全图 SAD 44.3、零图形-背景反转）。我们进一步在各模型原始论文基准（AIM-500、MicroMat-3K）上做了跨数据集自验，结果与原文趋势相符，说明实现与评测流程没有明显偏离；据此说明植物场景下的较高误差主要源于数据域特性（主体满框、类内相似干扰）而非模型本身。
 	\end{cnabstract}
 	%填写英文摘要内容和关键字
 	\begin{enabstract}{Image Matting; Deep Learning; Plant Images; Reproduction}
-		Image matting aims to predict the per-pixel foreground opacity (alpha matte) of an image so as to naturally separate the target from the background, which is a fundamental task in image editing and visual cognition. Recently, matting methods based on deep learning and large-scale pre-trained models have achieved remarkable progress. Focusing on the specific scenario of plant images, this report reproduces and compares four matting methods of distinct paradigms under a unified protocol: trimap-based ViTMatte, zero-shot promptable ZIM, diffusion-based SDMatte, and SMat that unifies automatic and interactive matting. All models are evaluated on the PM plant dataset (150 images resized to $1024^2$) against identical ground truth, with a unified trimap used to define unknown-region metrics, reporting SAD/MSE/MAD over both the whole image and the unknown region. With a trimap prior, ViTMatte attains the best whole-image accuracy (SAD 25.5); among the three trimap-free models, the diffusion-based SDMatte is the most robust (whole-image SAD 44.3, zero figure-ground inversion). Cross-dataset sanity checks on the original benchmarks (AIM-500, MicroMat-3K) are consistent with the trends reported in the source papers, suggesting no obvious deviation in the implementation or evaluation pipeline and indicating that the higher error on plants stems from domain characteristics (full-frame subjects, intra-class distractors) rather than the models themselves.
+		Image matting aims to predict the per-pixel foreground opacity (alpha matte) of an image so as to naturally separate the target from the background, which is a fundamental task in image editing and visual cognition. Recently, matting methods based on deep learning and large-scale pre-trained models have achieved remarkable progress. Focusing on the specific scenario of plant images, this report reproduces and compares four matting methods of distinct paradigms under a unified protocol: trimap-based ViTMatte, zero-shot promptable ZIM, diffusion-based SDMatte, and SMat that unifies automatic and interactive matting. All models are evaluated on the PM plant dataset (150 images resized to $1024^2$) against identical ground truth, with a unified trimap used to define unknown-region metrics, reporting SAD/MSE/MAD over both the whole image and the unknown region. With a trimap prior, ViTMatte attains the best whole-image accuracy (SAD 25.1); among the three trimap-free models, the diffusion-based SDMatte is the most robust (whole-image SAD 44.3, zero figure-ground inversion). Cross-dataset sanity checks on the original benchmarks (AIM-500, MicroMat-3K) are consistent with the trends reported in the source papers, suggesting no obvious deviation in the implementation or evaluation pipeline and indicating that the higher error on plants stems from domain characteristics (full-frame subjects, intra-class distractors) rather than the models themselves.
 	\end{enabstract}
 
 	%生成目录
@@ -120,8 +120,28 @@
 	需强调各模型\textbf{输入条件存在差异}——ViTMatte 享有 trimap 先验，其余三者没有——故不能简单宣称“ViTMatte 最好”，该差异本身即是分析的切入点。据此本文设计两条对照轴：一是“\textbf{给定前景的精修}（ViTMatte）vs 自主前景选择（其余三者）”，考察前景是否需要外部给定；二是在 trimap-free 方法内部比较“SAM 自动 / 扩散 / 自动+交互”三种前端机制的图形-背景分离鲁棒性。为公平起见，ZIM/SDMatte/SMat 的提示一律由真值\emph{程序化派生}（如真值框、真值最远点采样，信息对等而非手工点击），不引入额外人工监督。
 
 	\section{Baseline 评测结果}
-	\subsection{总体指标对比}
-	表~\ref{tab:pm} 给出各模型在 PM 数据集上的统一评测结果（全图与 Unknown 双口径，各 5 指标），图~\ref{fig:qual} 给出代表样本的定性对比。
+	本章遵循「先验证、再分模型、后对比」的顺序：首先在各模型原始论文基准上做跨数据集自验，确认复现忠实（\S\ref{sec:crossval}）；再逐模型给出其在 PM 上测试过的全部变体指标并确定代表变体（\S\ref{sec:permodel}）；最后选各模型代表变体做统一跨模型对比与定性分析（\S\ref{sec:cross}）。
+
+	\subsection{论文指标复现验证}\label{sec:crossval}
+	在用 PM 数据评判模型之前，需先确认本文的实现与评测流程忠实于原方法、未引入明显偏差。为此我们在各模型\emph{原始论文基准}上做跨数据集自验（表~\ref{tab:crossval}）：ZIM 在其论文提出的 MicroMat-3K 上以官方评测流程运行，SMat 与 SDMatte 在自动抠图基准 AIM-500 上评测（按 AIM 论文~\cite{AIM} 惯例采用全图口径）。结果在趋势层面与原文规律相符——例如 ZIM 在框提示下显著优于点提示、fine 子集误差高于 coarse 子集；SMat/SDMatte 在 AIM-500 上的全图 MAD 均在 $0.02$ 量级，与其论文水准一致。这说明复现没有明显失真，可放心用于后续 PM 评测；也反衬出 PM 上的较高误差应主要归因于植物数据域特性，而非实现流程问题。
+
+	\input{tables/crossval.tex}
+
+	\subsection{各模型在 PM 上的完整结果}\label{sec:permodel}
+	表~\ref{tab:permodel} 列出每个模型在 PM 上测试过的\emph{全部变体}（全图与 Unknown 双口径，各 5 指标），并加粗标出进入跨模型对比的代表变体。逐模型观察如下。
+
+	\textbf{ViTMatte}（4 变体：ViT-S/B $\times$ Comp-1k/DIS-646）。四者全图 SAD 仅在 $25.1\sim27.0$ 间波动、差异 $<2$，说明在 PM 上 ViTMatte 对骨干大小与训练集\emph{都不敏感}——因为 trimap 已把前景范围约束死，模型只需在窄未知带上精修。其中略优的规律是「DIS-646 $>$ Comp-1k」（DIS 的精细边界更贴植物细结构），而加大骨干（S$\to$B）收益甚微、Comp-1k 上 B 反而略差。综合取最优的 \textbf{ViT-B, DIS-646}（全图 SAD 25.1）作代表。
+
+	\textbf{ZIM}（4 变体：ViT-B/L $\times$ raw/fgfix）。骨干规模在此\emph{决定成败}：ViT-B raw 全图 SAD 高达 $309.6$（MAD 0.295），换大骨干 ViT-L raw 降到 $93.2$。差距主要来自「图形-背景反转」——在满框植株上把背景误当前景，ViT-B 反转远多于 ViT-L。`fgfix` 是对检测到的反转样本取补做事后校正，能进一步降误差（L: $93.2\to73.1$），但属事后修补、非模型原生输出。为如实反映其原生失败，跨模型对比取 \textbf{ViT-L, raw}（全图 SAD 93.2）。
+
+	\textbf{SDMatte}（box prompt）。单一配置，全图 SAD 44.3、MAD 0.042，是三种 trimap-free 方法中最低；Unknown 区 SAD 23.9 甚至略优于 ViTMatte（24.1），说明其扩散先验在边缘细节上与 trimap 精修旗鼓相当。取 \textbf{box prompt} 作代表。
+
+	\textbf{SMat}（auto / point8）。自动与交互两模式几乎持平（全图 SAD 64.1 vs 63.3，MAD 差 $<0.001$），表明其 DINOv2 自动分支已抓对前景、交互点带来的定位增益边际趋零。为体现「零提示即可用」，取 \textbf{auto (none)}（全图 SAD 64.1）作代表。
+
+	\input{tables/per_model.tex}
+
+	\subsection{模型间对比与定性分析}\label{sec:cross}
+	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}），图~\ref{fig:qual} 给出代表样本的定性对比。
 
 	\input{tables/result.tex}
 
@@ -132,13 +152,7 @@
 		\label{fig:qual}
 	\end{figure}
 
-	\subsection{推理效率}
-	所有模型均在单张 24\,GB GPU 上完成推理。其中扩散式 SDMatte 在单步推理设置下约 $1.9$\,s/图，SMat 约 $2.3$\,s/图；即便以 Stable Diffusion 2 为骨干，SDMatte 在单卡 24\,GB 内未出现显存溢出。ViTMatte 与 ZIM 推理更轻量（未做系统计时）。可见这些大型预训练抠图模型在单卡条件下均可实用部署。
-
-	\subsection{跨数据集复现自验}
-	为确认实现与评测流程没有明显偏离、并区分“模型能力”与“植物域难度”，我们在各模型\emph{原始论文基准}上做了跨数据集自验（表~\ref{tab:crossval}）。其中 ZIM 在其论文提出的 MicroMat-3K 上以官方评测流程运行，SMat 与 SDMatte 在自动抠图基准 AIM-500 上评测（按 AIM 论文~\cite{AIM} 惯例采用全图口径）。由于表中尚未补入逐项论文报告值，本节仅将这些结果作为趋势层面的 sanity check：例如 ZIM 在框提示下显著优于点提示，且 fine 子集误差高于 coarse 子集，这与原文规律相符。对照之下，PM 植物场景上的较高误差更可能来自数据域特性，而非实现流程的明显失真。
-
-	\input{tables/crossval.tex}
+	\textbf{推理效率。} 所有模型均在单张 24\,GB GPU 上完成推理。其中扩散式 SDMatte 在单步推理设置下约 $1.9$\,s/图，SMat 约 $2.3$\,s/图；即便以 Stable Diffusion 2 为骨干，SDMatte 在单卡 24\,GB 内未出现显存溢出。ViTMatte 与 ZIM 推理更轻量（未做系统计时）。可见这些大型预训练抠图模型在单卡条件下均可实用部署。
 
 	\input{sections/result_analysis.tex}
 
@@ -201,7 +215,7 @@
 	据此可提出若干方向：(1) 引入更明确的目标提示（box/point/text prompt 或目标参考图）以约束任务驱动的前景选择；(2) 加强细结构监督（边界 loss、skeleton loss 或局部 patch loss）；(3) 构建专门的植物认知挑战数据集；(4) 训练中加入背景植株、杂草、遮挡与阴影等困难样本；(5) 结合语义分割与 alpha matting，先识别目标植株再精修边缘。
 
 	\section{结论}
-	本文在统一协议下复现并对比了四种范式的抠图方法，并搭建了 failure case 归类与认知分析的框架。主要结论为：(1) 在给定 trimap 先验时，ViTMatte 取得最佳的全图精度（SAD 25.5），印证“给定前景下的精修”相对容易；(2) 在三种 trimap-free 方法中，扩散式 SDMatte 最稳健（全图 SAD 44.3、零图形-背景反转），SMat 自动模式次之且零提示即不反转，而 ZIM 软 matte 头在满框植株上易发生图形-背景反转，是其误差偏高的主因；(3) 跨数据集自验表明实现与评测流程没有明显偏离，植物场景的较高误差主要来自主体满框与类内相似干扰等数据域特性。在此基础上，本文从主体识别、前景范围、类内相似、边缘细节、孔洞结构、光照遮挡六个角度组织了失败模式分析，并从任务驱动目标选择、图形-背景分离、局部注意与细结构感知机制对其作认知解释（详见第 5、6 章；认知挑战样本与针对性改进见第 7、8 章）。
+	本文在统一协议下复现并对比了四种范式的抠图方法，并搭建了 failure case 归类与认知分析的框架。主要结论为：(1) 在给定 trimap 先验时，ViTMatte 取得最佳的全图精度（SAD 25.1），印证“给定前景下的精修”相对容易；(2) 在三种 trimap-free 方法中，扩散式 SDMatte 最稳健（全图 SAD 44.3、零图形-背景反转），SMat 自动模式次之且零提示即不反转，而 ZIM 软 matte 头在满框植株上易发生图形-背景反转，是其误差偏高的主因；(3) 跨数据集自验表明实现与评测流程没有明显偏离，植物场景的较高误差主要来自主体满框与类内相似干扰等数据域特性。在此基础上，本文从主体识别、前景范围、类内相似、边缘细节、孔洞结构、光照遮挡六个角度组织了失败模式分析，并从任务驱动目标选择、图形-背景分离、局部注意与细结构感知机制对其作认知解释（详见第 5、6 章；认知挑战样本与针对性改进见第 7、8 章）。
 
 	\bibliography{Bibs/reference.bib}
 \end{document}
