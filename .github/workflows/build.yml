@@ -15,6 +15,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Compile with XeLaTeX
+        id: compile
+        continue-on-error: true
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main.tex
@@ -34,15 +36,27 @@ jobs:
               '</fontconfig>' > /etc/fonts/local.conf
             fc-cache -f
 
-      - name: Upload PDF as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: report-pdf
-          path: main.pdf
-
-      - name: Publish to "latest" release
+      - name: Publish PDF + log to "latest" release (always)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: 最新编译 PDF
-          files: main.pdf
+          name: 最新编译
+          fail_on_unmatched_files: false
+          files: |
+            main.pdf
+            main.log
+
+      - name: Upload artifacts (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-build
+          if-no-files-found: ignore
+          path: |
+            main.pdf
+            main.log
+
+      - name: Fail job if compile failed
+        if: steps.compile.outcome != 'success'
+        run: |
+          echo "XeLaTeX 编译失败,main.log 已上传到 latest release / artifact" >&2
+          exit 1
