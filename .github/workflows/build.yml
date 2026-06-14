@@ -25,7 +25,10 @@ jobs:
           # 装等宽兼容的 Liberation Serif,并用 fontconfig 把 "Times New Roman" 解析到它。
           # 仅改 CI 环境,不动模板;Liberation 与 Times 度量一致,排版不变。
           pre_compile: |
-            apk add --no-cache fontconfig font-liberation 2>/dev/null || apk add --no-cache fontconfig ttf-liberation
+            # 新版 ctex(l3keys 严格)不接受 heading=true 后面紧跟宏 \HGP@fontset。
+            # 把选项顺序调成 heading=true 落末尾(值后即 ]),新旧 ctex 等价。仅改 CI 副本。
+            sed -i 's/,heading=true\\HGP@fontset/\\HGP@fontset,heading=true/' HustGraduPaper.cls
+            apk add --no-cache fontconfig font-liberation 2>/dev/null || apk add --no-cache fontconfig ttf-liberation || true
             mkdir -p /etc/fonts
             printf '%s\n' \
               '<?xml version="1.0"?>' \
