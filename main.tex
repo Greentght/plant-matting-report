@@ -136,7 +136,7 @@
 	\input{tables/pm_vitmatte.tex}
 
 	\subsubsection{ZIM}
-	ZIM 测试了 ViT-B/L 两种骨干 $\times$ raw/fgfix 共 4 个变体（表~\ref{tab:pm_zim}）。骨干规模在此\emph{决定成败}：ViT-B raw 全图 SAD 高达 $309.6$（MAD 0.295），换大骨干 ViT-L raw 降到 $93.2$。差距主要来自「图形-背景反转」——在满框植株上把背景误当前景，ViT-B 反转远多于 ViT-L。`fgfix` 是对检测到的反转样本取补做事后校正，能进一步降误差（L: $93.2\to73.1$），但属事后修补、非模型原生输出。为如实反映其原生失败，跨模型对比取 \textbf{ViT-L, raw}（全图 SAD 93.2）。
+	ZIM 测试了 ViT-B/L 两种骨干 $\times$ raw/fgfix 共 4 个变体（表~\ref{tab:pm_zim}）。骨干规模在此\emph{决定成败}：ViT-B raw 全图 SAD 高达 $309.6$（MAD 0.295），换大骨干 ViT-L raw 降到 $93.2$。差距主要来自「图形-背景反转」——在满框植株上把背景误当前景，ViT-B 反转远多于 ViT-L。‘fgfix’ 是对检测到的反转样本取补做事后校正，能进一步降误差（L: $93.2\to73.1$），但属事后修补、非模型原生输出。为如实反映其原生失败，跨模型对比取 \textbf{ViT-L, raw}（全图 SAD 93.2）。
 
 	\input{tables/pm_zim.tex}
 
