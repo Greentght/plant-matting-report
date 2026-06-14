@@ -1,0 +1,11 @@
+# LaTeX 编译产物(Overleaf / 本地编译自动生成,不入库)
+main.pdf
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
