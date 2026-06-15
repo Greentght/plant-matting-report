@@ -204,6 +204,10 @@
 
 	\input{tables/failure_stats.tex}
 
+	\textbf{按失败类别的分组指标。} 为把失败归类与定量误差打通，表~\ref{tab:failgroup} 给出各失败类别子集上的指标（并集图集、四模型同集评测）。三点观察印证前述结论：（1）\textbf{均值被失败样本主导}——ZIM 在“简单样本”上全图 SAD 仅 28.1，与其余模型相当，但在 F1 子集上飙至 372.4，说明其全集 SAD 93.2 几乎全部由少数定位失败样本拉高；（2）\textbf{trimap 先验只对定位层失败免疫}——ViTMatte 在 F1/F2 子集上几乎不受影响（30.4/45.1，接近其全集 25.1），却在 F3--F5 结构子集上同步升高（59.2/43.1/64.9），可见结构层失败无法靠 trimap 弥补；（3）\textbf{Unknown 区 MAD 进一步分离两层}——在 F1/F2 子集上各模型的 Unknown 区误差升幅有限（ViTMatte 仅 0.150/0.154），说明定位失败主要恶化 Unknown 区\textbf{以外}的全图误差；而在 F3--F5 子集上含 ViTMatte 在内的 Unknown 区 MAD 普遍升高，定位到误差确来自边缘细节本身。
+
+	\input{tables/failure_group.tex}
+
 	\subsection{四个模型的优缺点总结}
 	综合定量与失败统计：\textbf{ViTMatte} 依赖外部 trimap，但在给定前景下细结构最稳、零定位层失败，适合可获得可靠 trimap 的场景；\textbf{ZIM} 的 SAM 式软 matte 头在“主体满框”的植株上系统性图形-背景反转，即便给定真值框与 8 个前景点仍难根除，是其误差偏高的主因；\textbf{SDMatte} 的扩散先验定量最好、零反转、零漏检，失败集中于范围外扩；\textbf{SMat-auto} 零提示即零反转、零严重外扩，主要风险是低对比目标的整株漏检，且交互（8 点）相比自动几无增益，说明其自动分支已抓对前景。
 
