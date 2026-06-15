@@ -1,0 +1,22 @@
+\begin{table}[ht]
+	\centering
+	\caption{失败模式统计（PM 全 150 张，统一协议自动归类）。F1/F2 为定位层失败，按各模型逐图判定计数；F3--F5 为图像级结构难度，由真值几何特征判定、属全模型共性，给出达标图像数。判据见正文。}
+	\label{tab:failstats}
+	\begin{tabular}{lcccc}
+		\toprule
+		失败类型 & ViTMatte & ZIM-L & SDMatte & SMat-auto \\
+		\midrule
+		\multicolumn{5}{l}{\textbf{定位层失败（trimap-free 专属，逐模型计数）}} \\
+		F1 主体识别失败\,$^{a}$ & 0 & 13 & 0 & 9 \\
+		F2 前景范围外扩（严重） & 0 & 7 & 4 & 0 \\
+		\midrule
+		\multicolumn{5}{l}{\textbf{结构层失败（全模型共性，达标图像数）}} \\
+		F3 边缘/细结构粗糙 & \multicolumn{4}{c}{10 张（含 ViTMatte 在内均退化）} \\
+		F4 半透明/绒毛 & \multicolumn{4}{c}{4 张（植物域罕见）} \\
+		F5 孔洞/网状结构 & \multicolumn{4}{c}{11 张} \\
+		\bottomrule
+	\end{tabular}
+
+	\vspace{2pt}
+	{\footnotesize $^{a}$ ZIM 的 13 例含认错主体/反转 6 例与整株漏检 7 例；SMat 的 9 例均为整株漏检。}
+\end{table}
