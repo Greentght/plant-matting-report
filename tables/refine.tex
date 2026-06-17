@@ -1,0 +1,25 @@
+% 由 scripts/refine_eval_table.py 自动生成;Phase 6 边界精修前后对比
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{边界精修(guided-filter 重对齐 + 过渡带对比度锐化)前后在 Unknown 区域的指标对比。括号内为精修后相对精修前的变化量,\textbf{加粗}表示误差下降(改善);SAD/Grad $\times 10^{-3}$。ALL=全 150 张,F3=边缘细结构类($n=10$)。}
+\label{tab:refine}
+\begin{tabular}{llccc}
+\toprule
+模型 & 图集 & MAD & SAD & Grad \\
+\midrule
+ViTMatte-B\_DIS & ALL & 0.118\,\textbf{(-0.024)} & 20.4\,\textbf{(-3.6)} & 79.4\,(+3.4) \\
+ & F3 & 0.176\,\textbf{(-0.021)} & 52.6\,\textbf{(-5.8)} & 216.2\,(+17.0) \\
+\midrule
+ZIM-L (fgfix) & ALL & 0.172\,\textbf{(-0.007)} & 30.1\,\textbf{(-1.3)} & 110.9\,(+8.7) \\
+ & F3 & 0.236\,\textbf{(-0.012)} & 78.3\,\textbf{(-4.3)} & 281.7\,(+7.5) \\
+\midrule
+SDMatte & ALL & 0.138\,\textbf{(-0.001)} & 23.7\,\textbf{(-0.3)} & 102.6\,(+0.5) \\
+ & F3 & 0.188\,\textbf{(-0.003)} & 59.5\,\textbf{(-1.1)} & 248.2\,(+5.6) \\
+\midrule
+SMat-auto & ALL & 0.184\,\textbf{(-0.002)} & 32.5\,\textbf{(-0.4)} & 118.1\,(+2.9) \\
+ & F3 & 0.231\,\textbf{(-0.002)} & 73.3\,\textbf{(-0.8)} & 293.3\,(+9.2) \\
+\bottomrule
+\end{tabular}
+\end{table}
