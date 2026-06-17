@@ -26,9 +26,12 @@
 \usepackage{listings}
 \graphicspath{{figures/}}
 \definecolor{mygreen}{RGB}{90,135,109}
+\definecolor{codegray}{RGB}{128,128,128}
+\definecolor{codestr}{RGB}{160,40,40}
+\definecolor{codekw}{RGB}{0,0,200}
 \lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,columns=fullflexible,
-	keywordstyle=\color{blue},commentstyle=\color{mygreen},stringstyle=\color{red!60!black},
-	frame=single,numbers=left,numberstyle=\tiny\color{gray},showstringspaces=false,
+	keywordstyle=\color{codekw},commentstyle=\color{mygreen},stringstyle=\color{codestr},
+	frame=single,numbers=left,numberstyle=\tiny\color{codegray},showstringspaces=false,
 	language=Python,xleftmargin=2em,framexleftmargin=1.5em}
 \renewcommand{\algorithmicrequire}{\textbf{输入:}}
 \renewcommand{\algorithmicensure}{\textbf{输出:}}
