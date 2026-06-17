@@ -101,7 +101,7 @@
 	\end{table}
 
 	\subsection{选型取舍与理由}
-	从 9 个候选中确定 4 个 baseline，依据两条准则。其一是\textbf{避免范式雷同}：Matting-Anything 与 ZIM 同属“SAM + 可提示掩码”路线，Matte-Anything 的精修核心亦是 ViTMatte，三者机制高度重叠，故仅保留 ZIM、并把 Matte-Anything 降为补充对照；In-Context Matting 要求“同类参考图 + 其掩码”配对输入，而 PM 是无类别分组的单图，需自造参考池且涉及额外公平性处理，性价比低；MatAnyone 面向视频序列的时序目标抠图，与单图植物数据不匹配；Alpha-Free Matting 的贡献在训练侧（无精细 alpha 监督），推理结构即 ViTMatte 变体，作为 baseline 范式增量近零，更适合留作后续改进实验。其二是\textbf{最大化范式多样性与对照价值}：最终选定的 ViTMatte、ZIM、SDMatte、SMat 分别代表trimap 精修 / SAM 式零样本可提示 / 扩散式生成先验 / 自动与交互统一四条迥异路线，数量满足课程要求（2$\sim$4 个）且取上限；更关键的是，ViTMatte 依赖外部 trimap、其余三者自主确定前景，恰好构成“\textbf{给定前景的精修}”与“\textbf{自主前景选择}”这一最干净的对照，便于在植物复杂场景中分别考察“语义理解 / 目标选择”与“局部边缘细化”两类能力，并据此展开 failure case 与认知分析。
+	从 9 个候选中确定 4 个 baseline，依据两条准则。其一是\textbf{避免范式雷同}：Matting-Anything 与 ZIM 同属“SAM + 可提示掩码”路线，Matte-Anything 的精修核心亦是 ViTMatte，三者机制高度重叠，故仅保留 ZIM、并把 Matte-Anything 降为补充对照；In-Context Matting 要求“同类参考图 + 其掩码”配对输入，而 PM 是无类别分组的单图，需自造参考池且涉及额外公平性处理，性价比低；MatAnyone 面向视频序列的时序目标抠图，与单图植物数据不匹配；Alpha-Free Matting 的贡献在训练侧（无精细 alpha 监督），推理结构即 ViTMatte 变体，作为 baseline 范式增量近零，更适合留作后续改进实验。其二是\textbf{最大化范式多样性与对照价值}：最终选定的 ViTMatte、ZIM、SDMatte、SMat 分别代表trimap 精修 / SAM 式零样本可提示 / 扩散式生成先验 / 自动与交互统一四条迥异路线，数量满足课程要求（2$\sim$4 个）且取上限；更关键的是，ViTMatte 依赖外部 trimap、其余三者不输入 trimap（改由真值派生的弱提示或零提示确定前景，提示信息梯度见表~\ref{tab:cueinfo}），构成“\textbf{给定前景的精修}”与“\textbf{弱提示/自主前景选择}”的对照，便于在植物复杂场景中分别考察“语义理解 / 目标选择”与“局部边缘细化”两类能力，并据此展开 failure case 与认知分析。
 
 	\subsection{ViTMatte：trimap 精修}
 	ViTMatte~\cite{vitmatte} 以一个朴素的预训练视觉 Transformer（ViT）为骨干，输入为 RGB 图与 trimap 的拼接，通过轻量的卷积细节捕获模块在未知区域回归 alpha。\textbf{特点与分析}：它不进行前景判定，而是在已给定的确定前景/背景约束下做精修，因而作为“给定前景下的精修能力”这一控制变量参与对比。在植物场景中，由于任务被 trimap 约束得很死，其表现主要取决于 trimap 质量与细结构边缘的局部刻画，而非目标选择；这使它成为衡量“若前景已知，纯精修能做到多好”的上界参照。
@@ -142,8 +142,27 @@
 
 	每项指标同时给出\textbf{全图（whole）}与\textbf{未知区域（Unknown）}两套数值。两者的区别正是本文分析的关键：全图指标在所有像素上计算，因此会把“该不该把某片区域当前景”的判断错误（即图形-背景分离、主体选择是否正确）一并计入，反映整体前景判定能力；Unknown 区域指标只在上文定义的过渡带（trimap 中值为 128 的环带）上计算，剔除了大片确定前景/背景区，从而专门度量交界处的\textbf{边缘细节质量}。同一模型两套数值的分歧（如全图差但 Unknown 区好），即可定位其误差是来自前景范围判错还是边缘刻画不准。该 Unknown 区域由清洗后真值生成的同一套统一 trimap 定义；除 ViTMatte 将 trimap 作为输入外，其余模型均不输入 trimap，仅在评测阶段套用该区域划分，以保证 trimap-free 模型也能与 ViTMatte 在相同区域被公平比较。
 
-	\subsection{实验设计:两条对照轴}
-	需强调各模型\textbf{输入条件存在差异}——ViTMatte 享有 trimap 先验，其余三者没有——故不能简单宣称“ViTMatte 最好”，该差异本身即是分析的切入点。据此本文设计两条对照轴：一是“\textbf{给定前景的精修}”（ViTMatte）与“自主前景选择”（其余三者）之别，考察前景是否需要外部给定；二是在 trimap-free 方法内部比较“SAM 自动 / 扩散 / 自动+交互”三种前端机制的图形-背景分离鲁棒性。为公平起见，ZIM/SDMatte/SMat 的提示一律由真值程序化派生（如真值框、真值最远点采样，信息对等而非手工点击），不引入额外人工监督。
+	\subsection{实验设计:对照轴与提示信息梯度}
+	需强调各模型\textbf{并非在同等输入条件下竞争}，而是处在一条\textbf{由真值派生的提示信息梯度}上（表~\ref{tab:cueinfo}）：ViTMatte 输入逐像素 trimap（信息最多），ZIM 用真值框 + 8 个真值前景点，SDMatte 用真值框，SMat 交互模式用 8 个真值点，只有 SMat 自动模式\textbf{零提示}、是唯一真正“自主前景选择”的配置。因此严格地说，ZIM、SDMatte、SMat-point 都属于\textbf{真值条件化的弱监督}设置，并非自主确定前景。给它们提示并非为了“刷分”，而是这类 promptable/交互式模型\textbf{本就需要提示才能工作}——例如 ZIM 的全自动（everything）模式会在满框植株上大面积图形-背景反转、SDMatte 作为扩散式交互抠图必须有点/框/掩码定位；我们把提示统一成“最便宜、确定、可复现的真值框/点”，目的是\textbf{在“定位大体给对”的前提下单独衡量其抠图与边缘质量}，把“目标定位”与“matting 质量”两件事剥开。
+
+	\begin{table}[ht]
+		\centering
+		\caption{各配置在测试时获得的真值派生提示信息（从多到少）。除 SMat-auto 外均为真值条件化的弱监督，不能视作完全自主；比较模型时须结合其拿到的提示信息量一并解读。}
+		\label{tab:cueinfo}
+		\begin{tabular}{lll}
+			\toprule
+			配置 & 测试时的真值派生提示 & 信息量 \\
+			\midrule
+			ViTMatte    & 逐像素 trimap（确定前景/背景/未知带） & 最多 \\
+			ZIM-L       & 真值框 + 8 个真值前景点（FPS）        & 多 \\
+			SDMatte     & 真值框                                & 中 \\
+			SMat-point8 & 8 个真值前景点（FPS）                 & 少 \\
+			SMat-auto   & 无（零提示）                          & 零（唯一自主） \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+
+	据此本文设计两条对照轴：一是\textbf{提示信息多少}——稠密 trimap（ViTMatte）/ 稀疏真值提示（ZIM/SDMatte/SMat-point）/ 零提示自主（SMat-auto），考察前景需要多少外部给定；二是在不输入 trimap 的方法内部，比较“SAM 自动 / 扩散 / 自动+交互”三种前端机制的图形-背景分离鲁棒性。所有真值提示均由真值程序化派生（真值框、真值最远点采样，信息对等而非手工点击），不引入额外人工监督。
 
 	\section{Baseline 评测结果}
 	本章遵循“先验证、再分模型、后对比”的顺序：首先在各模型原始论文相关基准上做跨数据集自验，排查实现与评测流程中的明显偏差（\S\ref{sec:crossval}）；再逐模型给出其在 PM 上测试过的全部变体指标并确定代表变体（\S\ref{sec:permodel}）；最后选各模型代表变体做统一跨模型对比与定性分析（\S\ref{sec:cross}）。
