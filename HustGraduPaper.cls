@@ -331,7 +331,7 @@
 \captionsetup{labelsep=quad}
 \captionsetup{font={hust,singlespacing}}
 \captionsetup[figure]{position=bottom,skip={10pt}}
-\captionsetup[table]{position=top,skip={10pt}}
+\captionsetup[table]{position=top,skip={10pt},justification=centering}
 \setlength{\textfloatsep}{6pt}
 \setlength{\floatsep}{0pt}
 \setlength{\intextsep}{6pt}
