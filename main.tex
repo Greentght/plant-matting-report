@@ -194,9 +194,23 @@
 	\input{tables/pm_smat.tex}
 
 	\subsection{模型间对比与定性分析}\label{sec:cross}
-	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}），图~\ref{fig:qual} 给出代表样本的定性对比。
+	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}）。图~\ref{fig:metric_overview} 将表中两个最关键的口径可视化，图~\ref{fig:error_tradeoff} 进一步把全图误差与边界误差放在同一坐标系中对照；图~\ref{fig:qual} 给出代表样本的定性对比。
 
 	\input{tables/result.tex}
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.96\linewidth]{figures/metric_overview.pdf}
+		\caption{核心指标总览。左图为全图 SAD，反映主体识别与前景范围是否正确；右图为 Unknown 区域 MAD，反映边界过渡带的 alpha 细节质量。可见 ViTMatte 在全图口径上明显领先，而 SDMatte 在 Unknown 区域与 ViTMatte 接近。}
+		\label{fig:metric_overview}
+	\end{figure}
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.64\linewidth]{figures/error_tradeoff.pdf}
+		\caption{全图误差与边界误差的二维关系。横轴为全图 SAD，纵轴为 Unknown 区 MAD；右移主要表示主体/范围层面的错误增大，上移主要表示边界细节误差增大。该图直观显示 trimap-free 方法的主要差距来自全图范围判定，而 SDMatte 的局部边界质量并不弱。}
+		\label{fig:error_tradeoff}
+	\end{figure}
 
 	\begin{figure}[ht]
 		\centering
@@ -213,6 +227,13 @@
 	本章把植物抠图中的典型失败归为五类：主体识别失败、前景范围判断错误、边缘与细结构粗糙、半透明/绒毛、孔洞/网状结构。前两类属\textbf{定位层}失败（前景“是谁”判错），后三类属\textbf{结构层}失败（前景定位正确、但“细节”刻画不到位）。我们采用可复现的客观判据自动归类：对每个“图像\,$\times$\,模型”对，计算\textbf{捕获率}（真值前景区内预测 alpha 均值）与\textbf{泄漏率}（真值背景区内预测 alpha 均值）——捕获率低记为主体识别失败（F1），捕获率高而泄漏率高记为前景范围外扩（F2）；结构层失败则由真值的几何特征（半透明比例、孔洞比例、细结构腐蚀比例）配合 ViTMatte 的 Unknown 区误差判定。各类统计见表~\ref{tab:failstats}。
 
 	需要说明的是，最初框架中的“类内相似干扰”在本数据集上并不构成\textbf{独立}的失败类型：它更多是\textbf{诱因}——当背景出现同种植株时会加剧 F1/F2，但其表象仍落入主体误认或范围外扩，故并入 F1/F2 讨论而不单列。
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.76\linewidth]{figures/capture_leak.pdf}
+		\caption{定位层失败的捕获率--泄漏率诊断散点图。每个点对应一个“图像\,$\times$\,模型”预测，颜色表示模型，形状表示自动归类结果。正常样本集中在右下角；F1 主体识别失败表现为捕获率显著降低，F2 范围外扩表现为背景泄漏率升高。}
+		\label{fig:capture_leak}
+	\end{figure}
 
 	\begin{figure}[ht]
 		\centering
@@ -243,11 +264,25 @@
 	\subsection{类型五（F5）：孔洞与网状结构}
 	表现为叶片内部孔洞、网状叶脉间隙的 alpha 被错误填充或边界糊化。对应认知机制\textbf{细结构感知 + 拓扑/上下文推理}。该类相对丰富（11 张达标），且与 F3 高度重叠——细裂、羽状叶片天然\textbf{又细又多孔}（63、18、94 号同时入选 F3 与 F5，见图~\ref{fig:fail_struct}），可视为“细裂叶片复合挑战”。同样为全模型共性，ViTMatte 亦不能幸免。
 
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.68\linewidth]{figures/structural_error.pdf}
+		\caption{结构属性与边界误差的关系。横轴为细结构比例，纵轴为给定 trimap 的 ViTMatte Unknown MAD；点大小表示孔洞比例，颜色表示半透明比例。即便前景身份已由 trimap 锁定，细结构比例较高的样本仍出现更高边界误差，说明结构层失败不能仅靠目标定位解决。}
+		\label{fig:structural_error}
+	\end{figure}
+
 	\section{不同模型的失败模式对比}
 	\subsection{失败模式统计表}
 	表~\ref{tab:failstats} 汇总五类失败在四模型上的分布。可见两条清晰规律：其一，\textbf{定位层失败（F1/F2）是 trimap-free 方法专属}，ViTMatte 借 trimap 先验全部为零；其二，三种 trimap-free 方法的失败谱\textbf{各具特征}——ZIM 同时高发 F1 与 F2（唯一会认错主体/反转者），SDMatte 仅有 F2 而无 F1（“找得对、圈得大”），SMat-auto 仅有 F1 漏检而无严重外扩与反转（“要么抓干净、要么整片丢”）。结构层失败（F3--F5）则不区分范式，为全模型共性。
 
 	\input{tables/failure_stats.tex}
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.76\linewidth]{figures/failure_heatmap.pdf}
+		\caption{五类失败模式的模型分布热力图。F1/F2 按逐模型逐图的定位层失败计数；F3--F5 按真值几何属性统计达标图像数，并作为全模型共有结构挑战显示。热力图突出 ZIM 的主体/范围错误高发、SDMatte 主要为范围外扩、SMat-auto 主要为漏检，而结构层挑战不依赖具体前端。}
+		\label{fig:failure_heatmap}
+	\end{figure}
 
 	\textbf{按失败类别的分组指标。} 为把失败归类与定量误差打通，表~\ref{tab:failgroup} 给出各失败类别子集上的指标（并集图集、四模型同集评测）。三点观察印证前述结论：（1）\textbf{均值被失败样本主导}——ZIM 在“简单样本”上全图 SAD 仅 28.1，与其余模型相当，但在 F1 子集上飙至 372.4，说明其全集 SAD 93.2 几乎全部由少数定位失败样本拉高；（2）\textbf{trimap 先验只对定位层失败免疫}——ViTMatte 在 F1/F2 子集上几乎不受影响（30.4/45.1，接近其全集 25.1），却在 F3--F5 结构子集上同步升高（59.2/43.1/64.9），可见结构层失败无法靠 trimap 弥补；（3）\textbf{Unknown 区 MAD 进一步分离两层}——在 F1/F2 子集上各模型的 Unknown 区误差升幅有限（ViTMatte 仅 0.150/0.154），说明定位失败主要恶化 Unknown 区\textbf{以外}的全图误差；而在 F3--F5 子集上含 ViTMatte 在内的 Unknown 区 MAD 普遍升高，定位到误差确来自边缘细节本身。
 
@@ -266,50 +301,50 @@
 	补充样本来自两条途径，二者共用同一套评测口径（统一缩放至 $1024^2$、统一由真值 alpha 生成 trimap）。\textbf{其一为 AIM-500 通用域参照}：从通用抠图基准 AIM-500~\cite{AIM} 的植物子集中挑选代表样本，其 alpha 真值由 AIM-500 官方专业标注、无需重新标注，处理仅为\textbf{缩放到 $1024^2$ 并由真值 alpha 做膨胀/腐蚀生成统一 trimap}（\texttt{data\_scripts/clean\_and\_gen\_trimap.py}，过渡带 unknown\,$=128$）。\textbf{其二为校园自采}：实地拍摄真实植物，真值经一条\textbf{与被评测模型无关}的流程得到——先用交互式工具\textbf{人工抠出}目标植株、导出带透明通道的 RGBA 抠图（即 \texttt{koutu/} 下的手工抠图）；再用脚本（\texttt{data\_scripts/cutout\_to\_alpha.py}）把抠图\textbf{转换为标准 alpha}：删除孤立小斑（保留主连通域）、去除画笔毛刺、填实画笔不透明度造成的内部半透明（保留真实软边），并用 SIFT 将抠图配准回原始照片坐标系、以原图灰度为引导用 guided filter 做边缘贴合与抗锯齿，最后同法生成 trimap。\textbf{公平性约束}：真值\textbf{绝不}由任何被评测模型（ViTMatte/ZIM/SDMatte/SMat）生成，否则该模型将在自身生成的真值上误差趋零、造成评测泄漏；guided filter 等经典滤波不偏向任一学习型模型，故可用。完整转换脚本见附录~\ref{app:cutout}。
 
 	\subsection{按失败类别的代表样本}
-	下面按 F1--F5 逐类列出代表样本并说明各张想验证的认知挑战。\textbf{每个样本附三张对比图、全部缩放到方形以便对齐观察}：AIM 样本为“输入\,$|$\,官方 alpha\,$|$\,脚本生成 trimap”，校园自采样本为“原图\,$|$\,手工抠图（\texttt{koutu/}，已用 SIFT 配准回原图坐标系、与原图及 alpha 空间对齐）\,$|$\,脚本转换得到的 alpha 真值”，后者中段到末段恰好直观呈现了去毛刺、去孤立区域与边缘精修的效果。逐张实测复现情况见第~\ref{sec:challresult} 节。
+	为便于全文对照，9 张样本统一命名：\textbf{AIM-1$\sim$4} 取自 AIM-500，\textbf{CAM-1$\sim$5} 为校园自采（CAM = campus），同一名字在正文、各图与表~\ref{tab:challenge} 中通用，每个名字唯一对应一张图。下面按 F1--F5 逐类列出代表样本并说明各张想验证的认知挑战。\textbf{每个样本附三张对比图、全部缩放到方形以便对齐观察}：AIM 样本为“输入\,$|$\,官方 alpha\,$|$\,脚本生成 trimap”，校园自采样本为“原图\,$|$\,手工抠图（\texttt{koutu/}，已用 SIFT 配准回原图坐标系、与原图及 alpha 空间对齐）\,$|$\,脚本转换得到的 alpha 真值”，后者中段到末段恰好直观呈现了去毛刺、去孤立区域与边缘精修的效果。逐张实测复现情况见第~\ref{sec:challresult} 节。
 
-	\textbf{F1 主体识别（图~\ref{fig:challenge_f1}）。} 3 张验证“任务驱动的目标选择”：AIM 橡皮树（非显著主体 NS、阔叶绿植与 PM 域一致）；campus\_102（目标株被多株同种绿植环绕，须从类内相似背景中选定中央目标）；campus\_111（盆栽，目标株右后另立一株同种植物，考察能否只抠目标株而不并入邻株——该图原拟作前景外扩 F2，实测真实失败却是 SMat 漏抠主体下半部叶簇而非误并邻株，故标签由 F2 修正为 F1，记作 F1*）。
+	\textbf{F1 主体识别（图~\ref{fig:challenge_f1}）。} 3 张验证“任务驱动的目标选择”：AIM-1（橡皮树，非显著主体 NS、阔叶绿植与 PM 域一致）；CAM-1（目标株被多株同种绿植环绕，须从类内相似背景中选定中央目标）；CAM-2（盆栽，目标株右后另立一株同种植物，考察能否只抠目标株而不并入邻株——该图原拟作前景外扩 F2，实测真实失败却是 SMat 漏抠主体下半部叶簇而非误并邻株，故标签由 F2 修正为 F1，记作 F1*）。
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f1.pdf}
-		\caption{F1 主体识别代表样本。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；campus 行：原图\,$|$\,手工抠图（koutu，已配准对齐）\,$|$\,脚本转换 alpha。}
+		\caption{F1 主体识别代表样本（AIM-1 / CAM-1 / CAM-2）。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；CAM 行：原图\,$|$\,手工抠图（koutu，已配准对齐）\,$|$\,脚本转换 alpha。}
 		\label{fig:challenge_f1}
 	\end{figure}
 
-	\textbf{F2 前景范围外扩（图~\ref{fig:challenge_f2}）。} 原拟用 campus\_103（单株绿叶、裸土背景反差大）验证“图形-背景分离”下的范围外扩，但实测各模型均能干净分离（见下节），故\textbf{保留为易样本对照}——借以说明并非所有采集样本都难、采样需以实测难度为准，F2 式外扩在校园阔叶植物上并未复现。
+	\textbf{F2 前景范围外扩（图~\ref{fig:challenge_f2}）。} 原拟用 CAM-3（单株绿叶、裸土背景反差大）验证“图形-背景分离”下的范围外扩，但实测各模型均能干净分离（见下节），故\textbf{保留为易样本对照}——借以说明并非所有采集样本都难、采样需以实测难度为准，F2 式外扩在校园阔叶植物上并未复现。
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f2.pdf}
-		\caption{F2 候选样本 campus\_103（原图\,$|$\,手工抠图（已配准对齐）\,$|$\,脚本转换 alpha）：实测各模型均能干净分离，降为易样本对照。}
+		\caption{F2 候选样本 CAM-3（原图\,$|$\,手工抠图（已配准对齐）\,$|$\,脚本转换 alpha）：实测各模型均能干净分离，降为易样本对照。}
 		\label{fig:challenge_f2}
 	\end{figure}
 
-	\textbf{F3 边缘细结构（图~\ref{fig:challenge_f3}）。} 3 张验证“局部细节注意 + 细结构感知”：AIM 羽状细枝（细结构比例 thin\,$=0.77$）；campus\_109（细长披针叶呈放射状、混于同色枯叶碎屑，叶尖与细叶边界易糊）；campus\_110（文竹，羽状针叶极细密，是本组最严苛的细结构样本）。
+	\textbf{F3 边缘细结构（图~\ref{fig:challenge_f3}）。} 3 张验证“局部细节注意 + 细结构感知”：AIM-2（羽状细枝，细结构比例 thin\,$=0.77$）；CAM-4（细长披针叶呈放射状、混于同色枯叶碎屑，叶尖与细叶边界易糊）；CAM-5（文竹，羽状针叶极细密，是本组最严苛的细结构样本）。
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f3.pdf}
-		\caption{F3 边缘细结构代表样本。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；campus 行：原图\,$|$\,手工抠图（koutu，已配准对齐）\,$|$\,脚本转换 alpha。}
+		\caption{F3 边缘细结构代表样本（AIM-2 / CAM-4 / CAM-5）。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；CAM 行：原图\,$|$\,手工抠图（koutu，已配准对齐）\,$|$\,脚本转换 alpha。}
 		\label{fig:challenge_f3}
 	\end{figure}
 
-	\textbf{F4 半透明与绒毛（图~\ref{fig:challenge_f4}）。} 1 张验证“透明度估计”：蒲公英绒球（半透明比例 soft\,$=0.81$）。该结构为校园阔叶植物天然不具备，故沿用 AIM 代表样本。
+	\textbf{F4 半透明与绒毛（图~\ref{fig:challenge_f4}）。} 1 张验证“透明度估计”：AIM-3（蒲公英绒球，半透明比例 soft\,$=0.81$）。该结构为校园阔叶植物天然不具备，故沿用 AIM 代表样本。
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f4.pdf}
-		\caption{F4 半透明绒毛代表样本（AIM 蒲公英）：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap。}
+		\caption{F4 半透明绒毛代表样本（AIM-3，蒲公英）：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap。}
 		\label{fig:challenge_f4}
 	\end{figure}
 
-	\textbf{F5 孔洞与网状（图~\ref{fig:challenge_f5}）。} 1 张验证“拓扑结构保持”：盆栽枝叶间镂空（孔洞比例 hole\,$=0.50$）。同 F4，校园阔叶植物天然不具备此类结构，故沿用 AIM 代表样本。
+	\textbf{F5 孔洞与网状（图~\ref{fig:challenge_f5}）。} 1 张验证“拓扑结构保持”：AIM-4（盆栽枝叶间镂空，孔洞比例 hole\,$=0.50$）。同 F4，校园阔叶植物天然不具备此类结构，故沿用 AIM 代表样本。
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f5.pdf}
-		\caption{F5 孔洞网状代表样本（AIM 盆栽镂空枝叶）：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap。}
+		\caption{F5 孔洞网状代表样本（AIM-4，盆栽镂空枝叶）：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap。}
 		\label{fig:challenge_f5}
 	\end{figure}
 
@@ -322,13 +357,13 @@
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=\linewidth]{figures/challenge.pdf}
-		\caption{植物抠图认知挑战样本（9 张）$\times$ 五模型定性对比。列为 输入\,$|$\,真值\,$|$\,ViTMatte-B\,$|$\,ZIM-L\,$|$\,SDMatte\,$|$\,SMat-auto\,$|$\,SMat-pt8；行标注明主失败类与来源（aim/campus，F1* 表示实测改标）。真值为人工抠图加经典精修、与被评测模型无关；具体失败复现见正文分析。}
+		\caption{植物抠图认知挑战样本（9 张）$\times$ 五模型定性对比。列为 输入\,$|$\,真值\,$|$\,ViTMatte-B\,$|$\,ZIM-L\,$|$\,SDMatte\,$|$\,SMat-auto\,$|$\,SMat-pt8；行标为统一样本名 AIM-1$\sim$4 / CAM-1$\sim$5（括号内为失败类，F1* 表示实测改标），与表~\ref{tab:challenge} 一致。真值为人工抠图加经典精修、与被评测模型无关；具体失败复现见正文分析。}
 		\label{fig:challenge}
 	\end{figure}
 
 	\input{tables/challenge_persample.tex}
 
-	实测结果给出三点结论。其一，\textbf{边缘细结构（F3）是唯一在新样本上稳定且普遍复现的失败}：文竹（campus\_110）的羽状针叶使全部五个配置的 Unknown 区 MAD 升至 $0.088\sim0.155$（校园样本中最高），\textbf{即便给定 trimap、定位完全正确的 ViTMatte 也达 0.102}，再次印证第~\ref{sec:cross} 节的判断——结构层失败独立于目标选择、无法靠 trimap 先验弥补。其二，\textbf{各模型的失败个性与 PM 上一致}：ZIM 在 AIM 细密羽叶（F3/aim）上发生整图图形-背景反转（泄漏率 $0.75$、全图 SAD 高达 $443.8$），并在网状结构上欠分割（捕获率仅 $0.61$）；SMat-auto 则系统性欠分割，在 campus\_111 上漏掉主体下半部的次级叶簇与细茎（捕获率 $0.75$），而交互点提示（point8）可将其部分修复；SDMatte 表现为细边轻度糊化与轻微泄漏。其三，也是值得如实记录的一点，\textbf{“前景范围外扩（F2）”在校园阔叶植物上并未复现}：所有模型在校园样本上的泄漏率均不超过 $0.02$、能干净地把目标从背景中分离——原拟作 F2 的 campus\_103（单株绿叶、裸土背景）实测各模型全图 MAD 均 $\leq 0.006$，故降为\textbf{易样本对照}（说明该样本采集到但难度不大）；campus\_111 的真实失败是 SMat 欠分割（F1 性质）而非纳入背后的第二株同种植物，故其标签由 F2 修正为 F1。这一观察与第~\ref{sec:crossval} 节的方法论相呼应：F2 式的图形-背景反转更像是\textbf{AIM 细密绒羽样本叠加 promptable 软 matte 头}的特性，而非校园阔叶植物域的普遍属性。
+	实测结果给出三点结论。其一，\textbf{边缘细结构（F3）是唯一在新样本上稳定且普遍复现的失败}：文竹（CAM-5）的羽状针叶使全部五个配置的 Unknown 区 MAD 升至 $0.088\sim0.155$（校园样本中最高），\textbf{即便给定 trimap、定位完全正确的 ViTMatte 也达 0.102}，再次印证第~\ref{sec:cross} 节的判断——结构层失败独立于目标选择、无法靠 trimap 先验弥补。其二，\textbf{各模型的失败个性与 PM 上一致}：ZIM 在 AIM-2（细密羽叶）上发生整图图形-背景反转（泄漏率 $0.75$、全图 SAD 高达 $443.8$），并在网状结构（AIM-4）上欠分割（捕获率仅 $0.61$）；SMat-auto 则系统性欠分割，在 CAM-2 上漏掉主体下半部的次级叶簇与细茎（捕获率 $0.75$），而交互点提示（point8）可将其部分修复；SDMatte 表现为细边轻度糊化与轻微泄漏。其三，也是值得如实记录的一点，\textbf{“前景范围外扩（F2）”在校园阔叶植物上并未复现}：所有模型在校园样本上的泄漏率均不超过 $0.02$、能干净地把目标从背景中分离——原拟作 F2 的 CAM-3（单株绿叶、裸土背景）实测各模型全图 MAD 均 $\leq 0.006$，故降为\textbf{易样本对照}（说明该样本采集到但难度不大）；CAM-2 的真实失败是 SMat 欠分割（F1 性质）而非纳入背后的第二株同种植物，故其标签由 F2 修正为 F1。这一观察与第~\ref{sec:crossval} 节的方法论相呼应：F2 式的图形-背景反转更像是\textbf{AIM 细密绒羽样本叠加 promptable 软 matte 头}的特性，而非校园阔叶植物域的普遍属性。
 
 	\section{针对性改进与验证：边界细结构精修}\label{sec:refine}
 	基于前文对 F3 边缘细结构问题的定位，本节设计一个轻量、与模型无关的后处理模块，并在同一评测协议下对精修前后的指标与可视化效果进行对比。
@@ -339,27 +374,27 @@
 	\textbf{无泄漏设计（关键）}：引导信号只用输入原图，过渡带只由模型自身输出导出，\textbf{全程不使用真值 alpha、不使用统一 trimap、不使用任何被测模型的输出}。因此它是一个可在真实部署中直接套用的纯后处理，对四种范式使用同一套参数、一视同仁，不偏袒任何模型。为剥离定位层失败（F1/F2）对边缘指标的串扰，trimap-free 模型取其 headline 配置（ZIM 取反转校正后的 fgfix、SMat 取 auto），使前后对比集中反映边缘质量本身。
 
 	\subsection{结果}
-	表~\ref{tab:refine} 给出四个模型在精修前后于 Unknown 区域的指标（全 150 张记为 ALL，边缘细结构类记为 F3），图~\ref{fig:refine} 给出 F3 样本的精修前后定性对比。
+	表~\ref{tab:refine} 给出四个模型在精修前后于 Unknown 区域的指标（全 150 张记为 ALL，边缘细结构类记为 F3），图~\ref{fig:refine_gain} 汇总 Unknown MAD 的下降量，图~\ref{fig:refine} 给出 F3 样本的精修前后定性对比。
 
 	\input{tables/refine.tex}
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.76\linewidth]{figures/refine_gain.pdf}
+		\caption{边界精修带来的 Unknown MAD 下降量。ALL 表示全 150 张，F3 表示边缘细结构子集；柱越高表示误差下降越多。收益主要集中在 F3 子集，且 ViTMatte 与 ZIM 的软边收紧最明显。}
+		\label{fig:refine_gain}
+	\end{figure}
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.98\linewidth]{figures/refine.pdf}
-		\caption{边界精修前后定性对比（裁剪到前景外接框放大，目标失败类 F3 边缘细结构样本 94、63、62 号）。列依次为：输入图、真值 alpha、ViTMatte 精修前、ViTMatte 精修后（+GF）、SMat-auto 精修前、SMat 精修后。精修后细枝、羽状叶片与背景的软边收紧、更贴合真值，实心区域不受影响。}
+		\caption{边界精修前后定性对比（裁剪到前景外接框，目标失败类 F3 边缘细结构样本：PM 75 镂空裂叶、挑战集 AIM-2 蕨类羽枝、PM 94 穗状羽叶）。列依次为：输入图、真值 alpha、ViTMatte 精修前、ViTMatte 精修后（+GF）、SMat-auto 精修前、SMat 精修后。精修后细枝、羽状叶片与背景的软边收紧、更贴合真值，实心区域不受影响。}
 		\label{fig:refine}
 	\end{figure}
 
 	可得三点结论。其一，\textbf{该模块在全部四个模型上一致降低 MAD 与 SAD}，全图指标亦同步改善（全图 SAD：ViTMatte $25.1\to21.5$、ZIM $73.1\to71.0$、SDMatte $44.3\to44.1$、SMat $64.1\to63.3$），说明它在难样本上修正边缘、又不损害易样本。其二，\textbf{改善最大的恰是目标失败类与最依赖 trimap 的模型}：在 F3 类上 ViTMatte 的 Unknown SAD 下降 $5.8$、ZIM 下降 $4.3$，均明显大于各自全集降幅（$3.6$、$1.3$）；ViTMatte 因带 trimap、过渡带最宽、软边最厚，精修后 Unknown MAD 由 $0.142$ 降到 $0.118$（相对降幅约 $17\%$）。这印证了一个反直觉但合理的现象：\textbf{即便定位完全正确，模型在细结构上仍系统性输出过度柔化的 alpha，而真值边界其实较锐利}，单纯收紧软边即可换来可观的绝对精度提升。其三，\textbf{Grad 略有上升}：收紧软边会使边界梯度幅值偏离真值的抗锯齿过渡，引导滤波的重对齐步骤已把这一过冲压到很小（SDMatte 全集 Grad 仅 $+0.5$），但 MAD/SAD 的下降本质上是以轻微的梯度形状偏差换取绝对误差的减少。
 
-	\textbf{细节放大与跨域验证}。为看清精修在边缘层面的实际改变，图~\ref{fig:refine_zoom} 以软边最厚、视觉变化最明显的 SDMatte 为例，在 PM（75 镂空裂叶、94 穗状羽叶）与挑战集（F3-aim 蕨类羽状细枝）三张细结构样本上，各在真值边界处框出一小块放大：精修前细枝/叶裂之间被糊成大片灰色软块、孔洞被填死、边界模糊，精修后软边收紧、细枝与间隙重新分离，更贴近真值。把同一模块原样套到挑战集中结构最细的文竹（campus\_110，羽状针叶）上同样有效：\textbf{第~\ref{sec:challresult}~节中那个标志性的、连给定 trimap 的 ViTMatte 也达 0.102 的 Unknown MAD，精修后降到 0.091}；ZIM 由 $0.155$ 降到 $0.135$、SDMatte 由 $0.132$ 降到 $0.112$，而 SMat-auto 本就较锐利、基本持平（$0.095\to0.095$）。这再次落到同一规律——软边最厚的配置获益最大。
-
-	\begin{figure}[ht]
-		\centering
-		\includegraphics[width=0.98\linewidth]{figures/refine_zoom.pdf}
-		\caption{细结构边缘的精修前后\textbf{局部放大}对比（以软边最厚的 SDMatte 为例）。每行一张样本（75 镂空裂叶、F3-aim 蕨类羽枝、94 穗状羽叶）：最左为整图、红框标出放大区域，右侧依次为输入图、真值 alpha、精修前（before）、精修后（after，+GF），放大块按最近邻显示以呈现像素级软边。精修前细枝/孔洞间呈大片灰色过渡，精修后软边收紧、间隙重新打开，更贴合真值。}
-		\label{fig:refine_zoom}
-	\end{figure}
+	\textbf{跨域验证}。把同一模块原样套到挑战集中结构最细的文竹（CAM-5，羽状针叶）上同样有效：\textbf{第~\ref{sec:challresult}~节中那个标志性的、连给定 trimap 的 ViTMatte 也达 0.102 的 Unknown MAD，精修后降到 0.091}；ZIM 由 $0.155$ 降到 $0.135$、SDMatte 由 $0.132$ 降到 $0.112$，而 SMat-auto 本就较锐利、基本持平（$0.095\to0.095$）。这再次落到同一规律——软边最厚的配置获益最大。
 
 	\subsection{讨论：能改善什么、不能改善什么}
 	该模块改善的是\textbf{结构层（F3）的边缘锐度与糊边}，对应认知机制中的局部细节注意与细结构感知；它\textbf{无法解决定位层（F1/F2）的失败}——引导滤波与对比度锐化都在模型给出的过渡带内工作，当模型整株漏检（SMat 的 F1）或把背景纳入前景（ZIM 的反转）时，过渡带本身就处在错误位置，后处理无能为力。这也解释了为何精修对 SDMatte 与 SMat 的增益小于 ViTMatte：三个 trimap-free 模型的主要误差来自定位层而非边缘柔化，留给边缘后处理的空间相应有限。换言之，\textbf{轻量后处理是结构层失败的有效补丁，而目标选择层的失败仍须靠更强的前端先验弥补}，二者不可相互替代——这与第~\ref{sec:cross}~节关于两层失败的划分相互印证。
