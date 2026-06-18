@@ -352,13 +352,13 @@
 
 	可得三点结论。其一，\textbf{该模块在全部四个模型上一致降低 MAD 与 SAD}，全图指标亦同步改善（全图 SAD：ViTMatte $25.1\to21.5$、ZIM $73.1\to71.0$、SDMatte $44.3\to44.1$、SMat $64.1\to63.3$），说明它在难样本上修正边缘、又不损害易样本。其二，\textbf{改善最大的恰是目标失败类与最依赖 trimap 的模型}：在 F3 类上 ViTMatte 的 Unknown SAD 下降 $5.8$、ZIM 下降 $4.3$，均明显大于各自全集降幅（$3.6$、$1.3$）；ViTMatte 因带 trimap、过渡带最宽、软边最厚，精修后 Unknown MAD 由 $0.142$ 降到 $0.118$（相对降幅约 $17\%$）。这印证了一个反直觉但合理的现象：\textbf{即便定位完全正确，模型在细结构上仍系统性输出过度柔化的 alpha，而真值边界其实较锐利}，单纯收紧软边即可换来可观的绝对精度提升。其三，\textbf{Grad 略有上升}：收紧软边会使边界梯度幅值偏离真值的抗锯齿过渡，引导滤波的重对齐步骤已把这一过冲压到很小（SDMatte 全集 Grad 仅 $+0.5$），但 MAD/SAD 的下降本质上是以轻微的梯度形状偏差换取绝对误差的减少。
 
-	\textbf{跨域验证（文竹羽状针叶）}。把同一模块原样套用到第~\ref{sec:challresult}~节挑战集中结构最细的样本——文竹（campus\_110，羽状针叶，校园域 Unknown MAD 最高），可直接检验它对该章标志性结论的修补效果。如图~\ref{fig:refine_wenzhu}，针叶丛在所有模型中都被糊成连片，而精修在 Unknown 区一致降低误差：\textbf{第~\ref{sec:challresult}~节中那个标志性的、连给定 trimap 的 ViTMatte 也达 0.102 的 MAD，精修后降到 0.091}；ZIM 由 $0.155$ 降到 $0.135$、SDMatte 由 $0.132$ 降到 $0.112$，而 SMat-auto 本就较锐利、基本持平（$0.095\to0.095$）。这说明该后处理在跨域的极端细结构样本上同样有效，且再次落到同一规律：软边最厚的配置获益最大。
+	\textbf{跨域验证与细节放大（文竹羽状针叶）}。把同一模块原样套用到第~\ref{sec:challresult}~节挑战集中结构最细的样本——文竹（campus\_110，羽状针叶，校园域 Unknown MAD 最高），可直接检验它对该章标志性结论的修补效果。精修在 Unknown 区一致降低误差：\textbf{第~\ref{sec:challresult}~节中那个标志性的、连给定 trimap 的 ViTMatte 也达 0.102 的 MAD，精修后降到 0.091}；ZIM 由 $0.155$ 降到 $0.135$、SDMatte 由 $0.132$ 降到 $0.112$，而 SMat-auto 本就较锐利、基本持平（$0.095\to0.095$）。为看清边缘层面的实际变化，图~\ref{fig:refine_zoom} 以软边最厚、视觉变化最明显的 SDMatte 为例，在整图上框出两处细针叶区并放大：精修前针叶丛被糊成大片灰色软块、针叶间隙被填死，精修后软边收紧、间隙重新打开，更贴近真值的细针叶拓扑。这再次落到同一规律——软边最厚的配置获益最大。
 
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=0.98\linewidth]{figures/refine_wenzhu.pdf}
-		\caption{文竹（campus\_110，挑战集）边界精修前后对比。上行为整图（红框标出放大区域），下行为细针叶区放大特写；列依次为输入图、真值 alpha、ViTMatte、ViTMatte+GF、SMat-auto、SMat+GF。羽状针叶在各模型中均被糊成连片，精修后软边收紧、针叶间隙更贴合真值，给定 trimap 的 ViTMatte 的 Unknown MAD 由 0.102 降到 0.091。}
-		\label{fig:refine_wenzhu}
+		\includegraphics[width=0.98\linewidth]{figures/refine_zoom.pdf}
+		\caption{文竹（campus\_110，挑战集）细针叶边缘的精修前后\textbf{局部放大}对比（以软边最厚的 SDMatte 为例）。左为整图，红、绿框标出两处放大区域；右侧每行依次为：输入图、真值 alpha、精修前（before）、精修后（after，+GF），均按最近邻放大以显示像素级软边。精修前针叶间隙被糊死、边界呈大片灰色过渡；精修后软边收紧、间隙重新打开，更贴合真值。}
+		\label{fig:refine_zoom}
 	\end{figure}
 
 	\subsection{讨论：能改善什么、不能改善什么}
