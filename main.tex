@@ -44,12 +44,12 @@
 	\pagenumbering{Roman} %摘要页码为大写罗马数字
 
 	%填写中文摘要内容和关键字
-	\begin{cnabstract}{图像抠图；植物图像；方法复现；失败分析}
-		图像抠图旨在预测图像中每个像素的前景透明度（alpha matte），从而将目标从背景中自然分离出来，是图像编辑与视觉认知中的一项基础任务。本文面向植物图像这一同质背景突出、细碎结构密集的具体场景，在统一评测协议下复现并对比四种范式迥异的代表性方法：基于三分图（trimap）精修的 ViTMatte、零样本可提示的 ZIM、扩散式的 SDMatte，以及自动与交互统一的 SMat，借以对照“给定前景下的精修”与“自主前景选择”两条技术路线。所有模型在 PM 植物数据集（150 张，统一缩放至 $1024^2$）上以完全相同的真值评测，并以统一 trimap 划出前景边缘的过渡带（即 Unknown 区域，alpha 介于 0 与 1 之间、最难估计的像素），在全图与该过渡带双口径上报告 SAD/MSE/MAD 等指标——前者度量主体识别与图形-背景分离，后者专门度量边缘细节质量；同时在 AIM-500、MicroMat 等原始基准上做跨数据集自验，确认实现与评测流程的可信度。实验表明：在给定 trimap 先验时，ViTMatte 取得最佳的全图精度（SAD 25.1）；三种 trimap-free 方法中扩散式 SDMatte 最稳健（全图 SAD 44.3、零图形-背景反转），且其 Unknown 区精度（SAD 23.9）已与 ViTMatte 持平，说明 trimap-free 方法的主要差距来自前景范围判定而非边缘刻画，而 ZIM 因软 matte 头在满框主体上频繁发生图形-背景反转，全图误差最高（SAD 93.2）。在此基础上，本文把植物抠图失败系统归为主体识别、前景范围、边缘细结构、半透明/绒毛、孔洞/网状五类，并区分定位层与结构层误差：定位层错误主要由主体满框与类内相似干扰触发，结构层的边缘细结构则是跨范式共有的瓶颈，即便给定 trimap 仍然存在。补充标注的植物认知挑战样本进一步复现了上述失败模式，针对边缘细结构设计的轻量后处理可缓解结构层糊边、但不能替代更强的目标选择前端。结果表明，植物抠图同时要求任务驱动的目标选择、同质背景中的图形-背景分离与极细结构上的可靠 alpha 恢复，而非单纯的边缘细化问题。
+	\begin{cnabstract}{图像抠图；植物图像；失败分析；视觉认知}
+		图像抠图旨在为图像中每个像素预测前景透明度（alpha matte），从而把目标从背景中分离出来。本文以植物图像为对象，选取四种范式迥异的代表性模型作为 baseline——三分图（trimap）精修的 ViTMatte、SAM 式零样本可提示的 ZIM、扩散式的 SDMatte、自动与交互统一的 SMat，在统一测试划分与评测协议下做对比评测，并把工作重心放在\textbf{失败案例的系统归类}与\textbf{对比实验的结果分析}上。所有模型在 PM 植物数据集（150 张，统一缩放至 $1024^2$）上以完全相同的真值评测，并在全图与 Unknown 过渡带双口径上报告 SAD/MSE/MAD 等 alpha 指标，分别度量主体识别/图形-背景分离与边缘细节质量。对比分析表明：trimap 先验使 ViTMatte 取得最佳全图精度（SAD 25.1），而三种 trimap-free 方法的差距主要来自前景范围判定而非边缘刻画——SDMatte 的 Unknown 区精度（SAD 23.9）已与 ViTMatte 持平，其全图 SAD 却升到 44.3；ZIM 因软 matte 头在满框主体上频繁发生图形-背景反转，全图误差最高（SAD 93.2）。在此基础上，本文用可复现的客观判据（捕获率/泄漏率配合真值几何特征）把植物抠图失败系统归为主体识别、前景范围、边缘细结构、半透明/绒毛、孔洞/网状五类，区分定位层与结构层误差，并逐一对应视觉认知机制：定位层失败对应任务驱动目标选择与图形-背景分离的失效，主要由主体满框与类内相似干扰触发；结构层失败对应局部注意与细结构感知不足，其中边缘细结构是跨范式共有的瓶颈，即便给定 trimap 仍然存在。为验证这些失败模式真实且稳定，本文补充标注一批针对性的植物认知挑战样本，每类样本服务于一种认知挑战，实测复现了相应失败。最后，针对最普遍的边缘细结构失败设计轻量边界后处理做前后对比，结果显示其可缓解结构层糊边、却不能替代更强的目标选择前端，再次印证植物抠图的核心难点在于目标选择与图形-背景分离，而非单纯的边缘细化。
 	\end{cnabstract}
 	%填写英文摘要内容和关键字
-	\begin{enabstract}{Image Matting; Plant Images; Reproduction; Failure Analysis}
-		Image matting aims to predict the per-pixel foreground opacity (alpha matte) of an image so as to naturally separate the target from the background, which is a fundamental task in image editing and visual cognition. Focusing on plant images---a scenario marked by homogeneous backgrounds and densely intricate fine structures---this report reproduces and compares four matting methods of distinct paradigms under a unified protocol: trimap-based ViTMatte, zero-shot promptable ZIM, diffusion-based SDMatte, and SMat that unifies automatic and interactive matting, so as to contrast two routes: refining a given foreground versus autonomous foreground selection. All models are evaluated on the PM plant dataset (150 images resized to $1024^2$) against identical ground truth; a unified trimap delineates the foreground-boundary transition band (the unknown region, where alpha lies between 0 and 1 and is hardest to estimate), and we report SAD/MSE/MAD over both the whole image (measuring subject identification and figure-ground separation) and this band (measuring edge-detail quality), additionally cross-validating fidelity on original benchmarks such as AIM-500 and MicroMat. Results show that with a trimap prior ViTMatte attains the best whole-image accuracy (SAD 25.1); among the three trimap-free models, diffusion-based SDMatte is the most robust (whole-image SAD 44.3, zero figure-ground inversion) and its unknown-region accuracy (SAD 23.9) already matches ViTMatte, indicating that the main gap of trimap-free methods stems from foreground-extent decision rather than edge delineation, whereas ZIM---whose soft matte head frequently inverts figure and ground on full-frame subjects---yields the highest whole-image error (SAD 93.2). We further group plant-matting failures into five categories---subject identification, foreground extent, fine boundary structures, translucent/fuzzy edges, and hole-like or reticulated structures---distinguishing localization-layer errors (triggered by full-frame subjects and intra-class similarity) from structural-layer errors, of which fine boundary structure is a cross-paradigm bottleneck that persists even with a trimap. Additionally annotated cognitive challenge samples reproduce these failure modes, and a lightweight post-processing tailored to fine boundaries alleviates structural blurring but cannot replace a stronger foreground-selection front end. These findings show that plant matting jointly requires task-driven target selection, figure-ground separation in homogeneous backgrounds, and reliable alpha recovery on extremely fine structures, rather than being merely an edge-refinement problem.
+	\begin{enabstract}{Image Matting; Plant Images; Failure Analysis; Visual Cognition}
+		Image matting aims to predict the per-pixel foreground opacity (alpha matte) of an image so as to separate the target from its background. Taking plant images as the subject, this report selects four representative models of distinct paradigms as baselines---trimap-based ViTMatte, SAM-style zero-shot promptable ZIM, diffusion-based SDMatte, and SMat that unifies automatic and interactive matting---and compares them under a unified test split and protocol, placing the emphasis on \textbf{systematic failure-case categorization} and the \textbf{analysis of comparative results}. All models are evaluated on the PM plant dataset (150 images resized to $1024^2$) against identical ground truth, reporting SAD/MSE/MAD over both the whole image and the unknown transition band, which respectively measure subject identification / figure-ground separation and edge-detail quality. The comparison shows that the trimap prior lets ViTMatte attain the best whole-image accuracy (SAD 25.1), while the gap of the three trimap-free methods stems mainly from foreground-extent decision rather than edge delineation: SDMatte's unknown-region accuracy (SAD 23.9) already matches ViTMatte, yet its whole-image SAD rises to 44.3; ZIM, whose soft matte head frequently inverts figure and ground on full-frame subjects, yields the highest whole-image error (SAD 93.2). Building on this, using reproducible objective criteria (capture/leak rates together with ground-truth geometry) we group plant-matting failures into five categories---subject identification, foreground extent, fine boundary structures, translucent/fuzzy edges, and hole-like/reticulated structures---separating localization-layer from structural-layer errors and mapping each to a visual-cognition mechanism: localization failures correspond to breakdowns of task-driven target selection and figure-ground separation, mainly triggered by full-frame subjects and intra-class similarity, whereas structural failures correspond to insufficient local attention and fine-structure perception, among which fine boundary structure is a cross-paradigm bottleneck that persists even with a trimap. To verify that these failure modes are real and stable, we additionally annotate a targeted set of plant cognitive challenge samples, each serving one cognitive challenge, and empirically reproduce the corresponding failures. Finally, for the most pervasive fine-boundary failure we design a lightweight boundary post-processing for before/after comparison, which alleviates structural blurring but cannot replace a stronger foreground-selection front end, reaffirming that the core difficulty of plant matting lies in target selection and figure-ground separation rather than mere edge refinement.
 	\end{enabstract}
 
 	%生成目录
@@ -194,7 +194,7 @@
 	\input{tables/pm_smat.tex}
 
 	\subsection{模型间对比与定性分析}\label{sec:cross}
-	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}）。图~\ref{fig:metric_overview} 将表中两个最关键的口径可视化，图~\ref{fig:error_tradeoff} 进一步把全图误差与边界误差放在同一坐标系中对照；图~\ref{fig:qual} 给出代表样本的定性对比。
+	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}）。图~\ref{fig:metric_overview} 将表中两个最关键的口径可视化；图~\ref{fig:qual} 给出代表样本的定性对比。
 
 	\input{tables/result.tex}
 
@@ -203,13 +203,6 @@
 		\includegraphics[width=0.96\linewidth]{figures/metric_overview.pdf}
 		\caption{核心指标总览。左图为全图 SAD，反映主体识别与前景范围是否正确；右图为 Unknown 区域 MAD，反映边界过渡带的 alpha 细节质量。可见 ViTMatte 在全图口径上明显领先，而 SDMatte 在 Unknown 区域与 ViTMatte 接近。}
 		\label{fig:metric_overview}
-	\end{figure}
-
-	\begin{figure}[htbp]
-		\centering
-		\includegraphics[width=0.64\linewidth]{figures/error_tradeoff.pdf}
-		\caption{全图误差与边界误差的二维关系。横轴为全图 SAD，纵轴为 Unknown 区 MAD；右移主要表示主体/范围层面的错误增大，上移主要表示边界细节误差增大。该图直观显示 trimap-free 方法的主要差距来自全图范围判定，而 SDMatte 的局部边界质量并不弱。}
-		\label{fig:error_tradeoff}
 	\end{figure}
 
 	\begin{figure}[ht]
@@ -231,7 +224,7 @@
 	\begin{figure}[htbp]
 		\centering
 		\includegraphics[width=0.76\linewidth]{figures/capture_leak.pdf}
-		\caption{定位层失败的捕获率--泄漏率诊断散点图。每个点对应一个“图像\,$\times$\,模型”预测，颜色表示模型，形状表示自动归类结果。正常样本集中在右下角；F1 主体识别失败表现为捕获率显著降低，F2 范围外扩表现为背景泄漏率升高。}
+		\caption{定位层失败的捕获率--泄漏率诊断散点图。每个点对应一个“图像\,$\times$\,模型”预测；颜色对应模型（蓝=ViTMatte，橙=ZIM-L，绿=SDMatte，紫=SMat-auto），形状对应自动归类结果。正常样本集中在右下角；F1 主体识别失败表现为捕获率显著降低，F2 范围外扩表现为背景泄漏率升高。}
 		\label{fig:capture_leak}
 	\end{figure}
 
@@ -277,12 +270,6 @@
 
 	\input{tables/failure_stats.tex}
 
-	\begin{figure}[htbp]
-		\centering
-		\includegraphics[width=0.76\linewidth]{figures/failure_heatmap.pdf}
-		\caption{五类失败模式的模型分布热力图。F1/F2 按逐模型逐图的定位层失败计数；F3--F5 按真值几何属性统计达标图像数，并作为全模型共有结构挑战显示。热力图突出 ZIM 的主体/范围错误高发、SDMatte 主要为范围外扩、SMat-auto 主要为漏检，而结构层挑战不依赖具体前端。}
-		\label{fig:failure_heatmap}
-	\end{figure}
 
 	\textbf{按失败类别的分组指标。} 为把失败归类与定量误差打通，表~\ref{tab:failgroup} 给出各失败类别子集上的指标（并集图集、四模型同集评测）。三点观察印证前述结论：（1）\textbf{均值被失败样本主导}——ZIM 在“简单样本”上全图 SAD 仅 28.1，与其余模型相当，但在 F1 子集上飙至 372.4，说明其全集 SAD 93.2 几乎全部由少数定位失败样本拉高；（2）\textbf{trimap 先验只对定位层失败免疫}——ViTMatte 在 F1/F2 子集上几乎不受影响（30.4/45.1，接近其全集 25.1），却在 F3--F5 结构子集上同步升高（59.2/43.1/64.9），可见结构层失败无法靠 trimap 弥补；（3）\textbf{Unknown 区 MAD 进一步分离两层}——在 F1/F2 子集上各模型的 Unknown 区误差升幅有限（ViTMatte 仅 0.150/0.154），说明定位失败主要恶化 Unknown 区\textbf{以外}的全图误差；而在 F3--F5 子集上含 ViTMatte 在内的 Unknown 区 MAD 普遍升高，定位到误差确来自边缘细节本身。
 
@@ -374,23 +361,15 @@
 	\textbf{无泄漏设计（关键）}：引导信号只用输入原图，过渡带只由模型自身输出导出，\textbf{全程不使用真值 alpha、不使用统一 trimap、不使用任何被测模型的输出}。因此它是一个可在真实部署中直接套用的纯后处理，对四种范式使用同一套参数、一视同仁，不偏袒任何模型。为剥离定位层失败（F1/F2）对边缘指标的串扰，trimap-free 模型取其 headline 配置（ZIM 取反转校正后的 fgfix、SMat 取 auto），使前后对比集中反映边缘质量本身。
 
 	\subsection{结果}
-	表~\ref{tab:refine} 给出四个模型在精修前后于 Unknown 区域的指标（全 150 张记为 ALL，边缘细结构类记为 F3）；考虑到 ZIM 的反转校正属于事后处理，图~\ref{fig:refine_gain} 仅汇总不含该补丁的三个配置的 Unknown MAD 下降量，图~\ref{fig:refine} 给出 F3 样本的精修前后定性对比。
+	表~\ref{tab:refine} 给出四个模型在精修前后于 Unknown 区域的指标（全 150 张记为 ALL，边缘细结构类记为 F3）；图~\ref{fig:refine} 给出 F3 样本的精修前后定性对比。
 
 	\input{tables/refine.tex}
 
-	\begin{figure}[htbp]
-		\centering
-		\includegraphics[width=0.76\linewidth]{figures/refine_gain.pdf}
-		\caption{边界精修带来的 Unknown MAD 下降量。ALL 表示全 150 张，F3 表示边缘细结构子集；柱越高表示误差下降越多。图中去除了采用事后反转校正的 ZIM 配置，仅比较不含该补丁的配置。}
-		\label{fig:refine_gain}
-	\end{figure}
 
 	\begin{figure}[ht]
 		\centering
-		\subfloat[75（PM，镂空裂叶）]{\includegraphics[width=0.74\linewidth]{figures/refine_75.pdf}}\\
-		\subfloat[AIM-2（挑战集，蕨类羽枝）]{\includegraphics[width=0.74\linewidth]{figures/refine_aim2.pdf}}\\
-		\subfloat[94（PM，穗状羽叶）]{\includegraphics[width=0.74\linewidth]{figures/refine_94.pdf}}
-		\caption{边界精修前后定性对比（裁剪到前景外接框，每个样本一张 $3\times2$ 子图）。每张子图中：第 1 列为原图与真值 alpha，第 2 列为 ViTMatte 精修前/后，第 3 列为 SDMatte 精修前/后。SDMatte 软边最厚，精修前细枝/孔洞被糊成大片灰色、精修后软边收紧、间隙重新打开，更贴合真值；实心区域不受影响。}
+		\includegraphics[width=0.98\linewidth]{figures/refine.pdf}
+		\caption{ViTMatte 边界精修前后定性对比（裁剪到前景外接框；行依次为 PM 75 镂空裂叶、挑战集 AIM-2 蕨类羽枝、PM 94 穗状羽叶）。列依次为：输入图、真值 alpha、精修前（before）、精修后（after，+GF）。每行的红框标出精修改动最明显处（真值边界附近），可对比框内细枝/叶裂边缘在精修后软边收紧、更贴合真值，实心区域不受影响。}
 		\label{fig:refine}
 	\end{figure}
 
