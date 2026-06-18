@@ -194,15 +194,15 @@
 	\input{tables/pm_smat.tex}
 
 	\subsection{模型间对比与定性分析}\label{sec:cross}
-	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}）。图~\ref{fig:metric_overview} 将表中两个最关键的口径可视化；图~\ref{fig:qual} 给出代表样本的定性对比。
+	取上节确定的各模型代表变体，在完全一致的协议下做跨模型对比（表~\ref{tab:pm}）。图~\ref{fig:error_tradeoff} 将全图误差与边界误差放在同一坐标系中对照；图~\ref{fig:qual} 给出代表样本的定性对比。
 
 	\input{tables/result.tex}
 
 	\begin{figure}[htbp]
 		\centering
-		\includegraphics[width=0.96\linewidth]{figures/metric_overview.pdf}
-		\caption{核心指标总览。左图为全图 SAD，反映主体识别与前景范围是否正确；右图为 Unknown 区域 MAD，反映边界过渡带的 alpha 细节质量。可见 ViTMatte 在全图口径上明显领先，而 SDMatte 在 Unknown 区域与 ViTMatte 接近。}
-		\label{fig:metric_overview}
+		\includegraphics[width=0.64\linewidth]{figures/error_tradeoff.pdf}
+		\caption{全图误差与边界误差的二维关系。横轴为全图 SAD，纵轴为 Unknown 区 MAD；右移主要表示主体/范围层面的错误增大，上移主要表示边界细节误差增大。该图直观显示 trimap-free 方法的主要差距来自全图范围判定，而 SDMatte 的局部边界质量并不弱。}
+		\label{fig:error_tradeoff}
 	\end{figure}
 
 	\begin{figure}[ht]
