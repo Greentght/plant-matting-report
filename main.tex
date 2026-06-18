@@ -164,20 +164,20 @@
 	本章遵循“先验证、再分模型、后对比”的顺序：首先在各模型原始论文相关基准上做跨数据集自验，排查实现与评测流程中的明显偏差（\S\ref{sec:crossval}）；再逐模型给出其在 PM 上测试过的全部变体指标并确定代表变体（\S\ref{sec:permodel}）；最后选各模型代表变体做统一跨模型对比与定性分析（\S\ref{sec:cross}）。
 
 	\subsection{论文指标复现验证}\label{sec:crossval}
-	在用 PM 数据评判模型之前，需先确认本文的实现与评测流程未引入明显偏差。为此我们在各模型原始论文相关基准上做跨数据集自验，并在表~\ref{tab:crossval} 中同时列出本文复测值与论文报告值：ZIM 在其论文提出的 MicroMat-3K 上以官方评测流程运行，SMat 与 SDMatte 在自动抠图基准 AIM-500 上评测（按 AIM 论文~\cite{AIM} 惯例采用全图口径）。结果显示，ZIM 的 MicroMat-3K 指标与论文值几乎只存在四舍五入差异，SMat-auto 也与论文表格完全一致，说明这两条流程基本复现了原始设置。SDMatte 在 AIM-500 box 提示下的复测值（SAD 29.35、MAD 0.0178）弱于论文报告值（SAD 19.45、MAD 0.0116），但仍与论文结果处于同一量级，并在本文复测中优于 SMat-auto；因此本文仅将该项作为 sanity check，而不宣称严格复现到论文最优数值。总体上，这些自验结果可支持后续 PM 实验不是由评测脚本崩坏造成的，PM 上的误差升高更可能来自植物数据域特性。
+	在用 PM 数据评判模型之前，需先确认本文的实现与评测流程未引入明显偏差。为此我们在各模型原始论文相关基准上做跨数据集自验，并在表~\ref{tab:crossval} 中同时列出本文复测值与论文报告值：ZIM 在其论文提出的 MicroMat-3K 上以官方评测流程运行，SMat 与 SDMatte 在自动抠图基准 AIM-500 上评测（按 AIM 论文~\cite{AIM} 惯例采用全图口径）。结果显示，ZIM 的 MicroMat-3K 指标与论文值几乎只存在四舍五入差异，SMat-auto 也与论文表格完全一致，说明这两条流程基本复现了原始设置。SDMatte 在 AIM-500 box 提示下的复测值（SAD 29.35、MAD 0.0178）弱于论文报告值（SAD 19.45、MAD 0.0116），但仍与论文结果处于同一量级，并在本文复测中优于 SMat-auto；因此本文仅将该项作为检查，而不宣称严格复现到论文最优数值。而ViTMatte中数据集较难获取且，且该模型基于trimap做抠图，稳定性相对较好，观察输出结果没有明显错误如主体识别错误或者全黑全白等，认为ViTMatte在PM上复现效果正常。总体上，这些自验结果可支持后续 PM 实验不是由评测脚本崩坏造成的，PM 上的误差升高更可能来自植物数据域特性。
 
 	\input{tables/crossval.tex}
 
 	\subsection{各模型在 PM 上的完整结果}\label{sec:permodel}
-	本节逐一汇报每个模型在 PM 上测试过的全部变体（全图与 Unknown 双口径，各 5 指标），并确定其进入跨模型对比的代表变体。其中 ViTMatte、ZIM、SMat 各有多个变体可比，分别列表（表~\ref{tab:pm_vitmatte}、\ref{tab:pm_zim}、\ref{tab:pm_smat}）；SDMatte 仅测一种配置，结果在正文内联给出。
+	本节逐一汇报每个模型在 PM 上测试过的全部变体（全图与 Unknown 双口径，各 5 指标），并确定其进入跨模型对比的代表变体。
 
 	\subsubsection{ViTMatte}
-	ViTMatte 测试了 ViT-S/B 两种骨干 $\times$ Comp-1k/DIS-646 两种训练集共 4 个变体（表~\ref{tab:pm_vitmatte}）。四者全图 SAD 仅在 $25.1\sim27.0$ 间波动、差异 $<2$，说明在 PM 上 ViTMatte 对骨干大小与训练集都不敏感——因为 trimap 已把前景范围约束死，模型只需在窄 Unknown 带上精修。其中略优的规律是 DIS-646 训练集优于 Comp-1k（DIS 的精细边界更贴植物细结构），而骨干由 ViT-S 增大到 ViT-B 收益甚微、在 Comp-1k 上 B 反而略差。综合取最优的 \textbf{ViT-B, DIS-646}（全图 SAD 25.1）作代表。
+	ViTMatte 测试了 ViT-S/B 两种骨干 $\times$ Comp-1k/DIS-646 两种训练集共 4 个变体（表~\ref{tab:pm_vitmatte}）。四者全图 SAD 仅在 $25.1\sim27.0$ 间波动、差异 $<2$，说明在 PM 上 ViTMatte 对骨干大小与训练集都不敏感，因为 trimap 已把前景范围约束死，模型只需在窄 Unknown 带上精修。其中略优的规律是 DIS-646 训练集优于 Comp-1k（DIS 的精细边界更贴植物细结构），而骨干由 ViT-S 增大到 ViT-B 收益甚微、在 Comp-1k 上 B 反而略差。综合取最优的 \textbf{ViT-B, DIS-646}（全图 SAD 25.1）作代表。
 
 	\input{tables/pm_vitmatte.tex}
 
 	\subsubsection{ZIM}
-	ZIM 测试了 ViT-B/L 两种骨干（表~\ref{tab:pm_zim}）。骨干规模在此决定成败：ViT-B 全图 SAD 高达 $309.6$（MAD 0.295），换大骨干 ViT-L 降到 $93.2$。差距主要来自“图形-背景反转”——在满框植株上把背景误当前景，ViT-B 反转远多于 ViT-L。
+	ZIM 测试了 ViT-B/L 两种骨干（表~\ref{tab:pm_zim}）。骨干规模在此决定成败：ViT-B 全图 SAD 高达 $309.6$（MAD 0.295），换大骨干 ViT-L 降到 $93.2$。差距主要来自“图形-背景反转”，在满框植株上把背景误当前景，ViT-B 反转远多于 ViT-L。
 
 	\input{tables/pm_zim.tex}
 
@@ -208,7 +208,7 @@
 		\label{fig:qual}
 	\end{figure}
 
-	\textbf{推理效率。} 所有模型均在单张 24\,GB GPU 上完成推理。其中扩散式 SDMatte 在单步推理设置下约 $1.9$\,s/图，SMat 约 $2.3$\,s/图；即便以 Stable Diffusion 2 为骨干，SDMatte 在单卡 24\,GB 内未出现显存溢出。ViTMatte 与 ZIM 推理更轻量（未做系统计时）。可见这些大型预训练抠图模型在单卡条件下均可实用部署。
+	\textbf{推理效率。} 所有模型均在单张 24\,GB RTX3090 上完成推理。其中扩散式 SDMatte 在单步推理设置下约 $1.9$\,s/图，SMat 约 $2.3$\,s/图；即便以 Stable Diffusion 2 为骨干，SDMatte 在单卡 24\,GB 内未出现显存溢出。ViTMatte 与 ZIM 推理更轻量（未做系统计时）。可见这些大型预训练抠图模型在单卡条件下均可实用部署。
 
 	\input{sections/result_analysis.tex}
 
