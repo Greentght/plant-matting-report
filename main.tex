@@ -266,14 +266,14 @@
 	补充样本来自两条途径，二者共用同一套评测口径（统一缩放至 $1024^2$、统一由真值 alpha 生成 trimap）。\textbf{其一为 AIM-500 通用域参照}：从通用抠图基准 AIM-500~\cite{AIM} 的植物子集中挑选代表样本，其 alpha 真值由 AIM-500 官方专业标注、无需重新标注，处理仅为\textbf{缩放到 $1024^2$ 并由真值 alpha 做膨胀/腐蚀生成统一 trimap}（\texttt{data\_scripts/clean\_and\_gen\_trimap.py}，过渡带 unknown\,$=128$）。\textbf{其二为校园自采}：实地拍摄真实植物，真值经一条\textbf{与被评测模型无关}的流程得到——先用交互式工具\textbf{人工抠出}目标植株、导出带透明通道的 RGBA 抠图（即 \texttt{koutu/} 下的手工抠图）；再用脚本（\texttt{data\_scripts/cutout\_to\_alpha.py}）把抠图\textbf{转换为标准 alpha}：删除孤立小斑（保留主连通域）、去除画笔毛刺、填实画笔不透明度造成的内部半透明（保留真实软边），并用 SIFT 将抠图配准回原始照片坐标系、以原图灰度为引导用 guided filter 做边缘贴合与抗锯齿，最后同法生成 trimap。\textbf{公平性约束}：真值\textbf{绝不}由任何被评测模型（ViTMatte/ZIM/SDMatte/SMat）生成，否则该模型将在自身生成的真值上误差趋零、造成评测泄漏；guided filter 等经典滤波不偏向任一学习型模型，故可用。完整转换脚本见附录~\ref{app:cutout}。
 
 	\subsection{按失败类别的代表样本}
-	下面按 F1--F5 逐类列出代表样本并说明各张想验证的认知挑战。\textbf{每个样本附三张对比图、全部缩放到方形以便对齐观察}：AIM 样本为“输入\,$|$\,官方 alpha\,$|$\,脚本生成 trimap”，校园自采样本为“原图\,$|$\,手工抠图（\texttt{koutu/}）\,$|$\,脚本转换得到的 alpha 真值”，后者中段到末段恰好直观呈现了去毛刺、去孤立区域与边缘精修的效果。逐张实测复现情况见第~\ref{sec:challresult} 节。
+	下面按 F1--F5 逐类列出代表样本并说明各张想验证的认知挑战。\textbf{每个样本附三张对比图、全部缩放到方形以便对齐观察}：AIM 样本为“输入\,$|$\,官方 alpha\,$|$\,脚本生成 trimap”，校园自采样本为“原图\,$|$\,手工抠图（\texttt{koutu/}，已用 SIFT 配准回原图坐标系、与原图及 alpha 空间对齐）\,$|$\,脚本转换得到的 alpha 真值”，后者中段到末段恰好直观呈现了去毛刺、去孤立区域与边缘精修的效果。逐张实测复现情况见第~\ref{sec:challresult} 节。
 
 	\textbf{F1 主体识别（图~\ref{fig:challenge_f1}）。} 3 张验证“任务驱动的目标选择”：AIM 橡皮树（非显著主体 NS、阔叶绿植与 PM 域一致）；campus\_102（目标株被多株同种绿植环绕，须从类内相似背景中选定中央目标）；campus\_111（盆栽，目标株右后另立一株同种植物，考察能否只抠目标株而不并入邻株——该图原拟作前景外扩 F2，实测真实失败却是 SMat 漏抠主体下半部叶簇而非误并邻株，故标签由 F2 修正为 F1，记作 F1*）。
 
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f1.pdf}
-		\caption{F1 主体识别代表样本。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；campus 行：原图\,$|$\,手工抠图（koutu）\,$|$\,脚本转换 alpha。}
+		\caption{F1 主体识别代表样本。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；campus 行：原图\,$|$\,手工抠图（koutu，已配准对齐）\,$|$\,脚本转换 alpha。}
 		\label{fig:challenge_f1}
 	\end{figure}
 
@@ -282,7 +282,7 @@
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f2.pdf}
-		\caption{F2 候选样本 campus\_103（原图\,$|$\,手工抠图\,$|$\,脚本转换 alpha）：实测各模型均能干净分离，降为易样本对照。}
+		\caption{F2 候选样本 campus\_103（原图\,$|$\,手工抠图（已配准对齐）\,$|$\,脚本转换 alpha）：实测各模型均能干净分离，降为易样本对照。}
 		\label{fig:challenge_f2}
 	\end{figure}
 
@@ -291,7 +291,7 @@
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.82\linewidth]{figures/challenge_f3.pdf}
-		\caption{F3 边缘细结构代表样本。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；campus 行：原图\,$|$\,手工抠图（koutu）\,$|$\,脚本转换 alpha。}
+		\caption{F3 边缘细结构代表样本。AIM 行：输入\,$|$\,官方 alpha\,$|$\,脚本 trimap；campus 行：原图\,$|$\,手工抠图（koutu，已配准对齐）\,$|$\,脚本转换 alpha。}
 		\label{fig:challenge_f3}
 	\end{figure}
 
