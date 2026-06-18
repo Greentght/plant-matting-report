@@ -290,7 +290,7 @@
 	\subsubsection{失败现象与视觉认知机制的对应}\label{sec:fail_cog}
 	不同前端机制对应不同认知能力的强弱，因而在植物域犯不同的错误。\textbf{任务驱动目标选择}：当目标由外部 trimap“自上而下”给定时（ViTMatte），该步被旁路，零 F1/F2；需“自下而上”自主选择时，是否具备对象级语义先验直接决定成败：DINOv2 显著性（SMat）与扩散先验（SDMatte）能稳定选中满框主体，而 SAM 软 matte 头（ZIM）缺乏对象先验，易被更大更“干净”的背景区吸引而反转。\textbf{图形-背景分离}：F2 外扩正是该机制在同质场景下的边界归属错误，对象先验越强越不易外扩。\textbf{局部注意与细结构感知}：F3--F5 跨范式普遍存在，且不能由 trimap 先验弥补，说明它是独立于“目标选择”的更底层能力。这也解释了为何 SDMatte 在 Unknown 区可与 ViTMatte 比肩（扩散先验富含纹理/边缘细节），却仍在最细的网状结构上退化。
 
-	\section{植物抠图认知挑战样本补充标注}
+	\section{植物抠图认知挑战样本补充标注}\label{sec:challenge}
 	本章在课程 PM 数据集之外补充不少于 5 张针对性植物图像及其 alpha 标注，用于检验 F1--F5 失败模式在新图像上的复现情况。采样遵循“针对性优先于规模”的原则：每张样本都对应一类植物抠图认知挑战，而非随机收集普通植物图。
 
 	\subsection{样本来源与处理流程}
@@ -402,6 +402,23 @@
 	\section{写在最后}
     通过本次课程设计实验，不同 baseline 在主体选择、范围判断和细结构保持上的差异，我直观地理解了任务驱动目标选择、局部注意和细结构感知等课程概念在真实视觉任务中的体现。由于时间和算力有限，本文仍有不足，例如新增挑战样本规模较小、改进策略还比较初步。感谢老师们的指导，希望后续该课程持续引进实践性强的课设题目，让学弟学妹们都能在课设中提高实践能力。由于篇幅有限，完整代码以及图片可以在此获取https://github.com/Greentght/plant-matting.git
 	\bibliography{Bibs/reference.bib}
+
+	\begin{appendices}
+	\section{核心代码}
+	本附录摘录本文实验中三段最关键的代码（均加中文注释，为便于排版略去命令行解析等样板，完整版见前述 GitHub 仓库）：（A.1）数据侧的 alpha 清洗与 trimap 生成，是保证四模型评测公平、可比的前提；（A.2）校园自采认知挑战样本的自动标注流程，全程经典、与被评测模型无关，以避免评测泄漏；（A.3）针对 F3 边缘细结构失败设计的与模型无关的边界两步精修模块。
+
+	\subsection{Alpha 清洗与 trimap 生成}
+	对应正文第~\ref{sec:crossval}~节前的数据准备。PM 部分真值的“背景”为 $2/3/5/12$ 的近黑常数台地（压缩伪影），不清洗会使 trimap 几乎全为未知区、ViTMatte 误差从 SAD 25 恶化到 140。\texttt{clean\_alpha} 自适应地把背景/前景台地吸附回 $0/255$ 同时保留真实软边，\texttt{alpha\_to\_trimap} 再以统一的形态学核生成三分图。
+	\lstinputlisting[language=Python,caption={alpha 清洗与 trimap 生成（节选自 \texttt{data\_scripts/clean\_and\_gen\_trimap.py}）}]{code/clean_and_gen_trimap_core.py}
+
+	\subsection{挑战样本自动标注：手工抠图转 alpha 真值}
+	对应正文第~\ref{sec:challenge}~节校园自采样本的标注流程。该流程把人工抠出的 RGBA 抠图经“去毛刺$\to$填实半透明$\to$SIFT 配准回原图$\to$引导滤波边缘精修”转换为与原图对齐的标准 alpha；真值绝不由任何被评测模型生成，全部使用经典、无学习的算法以杜绝评测泄漏。
+	\lstinputlisting[language=Python,caption={手工抠图转 alpha 真值（节选自 \texttt{data\_scripts/cutout\_to\_alpha.py}）}]{code/cutout_to_alpha_core.py}
+
+	\subsection{改进：边界过渡带两步精修}
+	对应正文第~\ref{sec:refine}~节的针对性改进。\texttt{refine\_alpha} 只作用于模型自身预测的边界过渡带，先以输入原图灰度为引导做引导滤波重对齐软边，再在过渡带内做轻度 sigmoid 锐化收紧过度柔化的软边。全程不使用真值、不使用统一 trimap、不使用任何被测模型输出，对四种范式使用同一套参数，是可直接部署的纯后处理。
+	\lstinputlisting[language=Python,caption={边界过渡带两步精修（节选自 \texttt{scripts/refine\_boundary.py}）}]{code/refine_boundary_core.py}
+	\end{appendices}
 
 
 \end{document}
