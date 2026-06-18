@@ -182,7 +182,9 @@
 	\input{tables/pm_zim.tex}
 
 	\subsubsection{SDMatte}
-	SDMatte 仅评测一种配置（真值框提示、单步推理），无变体可比，故不单独列表：其全图 SAD 44.3、MSE 0.032、MAD 0.042，是三种 trimap-free 方法中最低；Unknown 区 SAD 23.9、MAD 0.139，甚至略优于 ViTMatte 代表变体（Unknown SAD 24.1），说明其扩散先验在边缘细节上与 trimap 精修旗鼓相当。该配置即作 SDMatte 的代表。
+	SDMatte 仅评测一种配置（真值框提示、单步推理），无变体可比，结果见表~\ref{tab:pm_sdmatte}：其全图 SAD 44.3、MSE 0.032、MAD 0.042，是三种 trimap-free 方法中最低；Unknown 区 SAD 23.9、MAD 0.139，甚至略优于 ViTMatte 代表变体（Unknown SAD 24.1），说明其扩散先验在边缘细节上与 trimap 精修旗鼓相当。该配置即作 SDMatte 的代表。
+
+	\input{tables/pm_sdmatte.tex}
 
 	\subsubsection{SMat}
 	SMat 测试了自动（none）与交互（point8）两种模式（表~\ref{tab:pm_smat}）。两者几乎持平（全图 SAD 分别为 64.1 与 63.3，MAD 相差 $<0.001$），表明其 DINOv2 自动分支已抓对前景、交互点带来的定位增益边际趋零。为体现“零提示即可用”，取 \textbf{auto (none)}（全图 SAD 64.1）作代表。
