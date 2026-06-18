@@ -214,8 +214,8 @@
 
 	\input{sections/result_analysis.tex}
 
-	\section{Failure case 系统归类与分析}
-    \subsection{Failure case归类}
+	\section{Failure case 系统归类与认知分析}
+    \subsection{典型失败的系统归类}
 	本章把植物抠图中的典型失败归为五类：主体识别失败、前景范围判断错误、边缘与细结构粗糙、半透明/绒毛、孔洞/网状结构。前两类属\textbf{定位层}失败（前景“是谁”判错），后三类属\textbf{结构层}失败（前景定位正确、但“细节”刻画不到位）。我们采用可复现的客观判据自动归类：对每个“图像\,$\times$\,模型”对，计算\textbf{捕获率}（真值前景区内预测 alpha 均值）与\textbf{泄漏率}（真值背景区内预测 alpha 均值）——捕获率低记为主体识别失败（F1），捕获率高而泄漏率高记为前景范围外扩（F2）；结构层失败则由真值的几何特征（半透明比例、孔洞比例、细结构腐蚀比例）配合 ViTMatte 的 Unknown 区误差判定。各类统计见表~\ref{tab:failstats}。
 
 	需要说明的是，最初框架中的“类内相似干扰”在本数据集上并不构成\textbf{独立}的失败类型：它更多是\textbf{诱因}——当背景出现同种植株时会加剧 F1/F2，但其表象仍落入主体误认或范围外扩，故并入 F1/F2 讨论而不单列。
@@ -267,21 +267,27 @@
 		\label{fig:structural_error}
 	\end{figure}
 
-	\subsection{不同模型的Failure case对比}
+	\subsection{失败模式的跨模型分布}
 	\subsubsection{失败模式统计表}
 	表~\ref{tab:failstats} 汇总五类失败在四模型上的分布。可见两条清晰规律：其一，\textbf{定位层失败（F1/F2）是 trimap-free 方法专属}，ViTMatte 借 trimap 先验全部为零；其二，三种 trimap-free 方法的失败谱\textbf{各具特征}——ZIM 同时高发 F1 与 F2（唯一会认错主体/反转者），SDMatte 仅有 F2 而无 F1（“找得对、圈得大”），SMat-auto 仅有 F1 漏检而无严重外扩与反转（“要么抓干净、要么整片丢”）。结构层失败（F3--F5）则不区分范式，为全模型共性。
 
 	\input{tables/failure_stats.tex}
 
 
+	\subsubsection{四个模型的优缺点总结}
+	综合定量与失败统计：\textbf{ViTMatte} 依赖外部 trimap，但在给定前景下细结构最稳、零定位层失败，适合可获得可靠 trimap 的场景；\textbf{ZIM} 的 SAM 式软 matte 头在“主体满框”的植株上系统性图形-背景反转，即便给定真值框与 8 个前景点仍难根除，是其误差偏高的主因；\textbf{SDMatte} 的扩散先验定量最好、零反转、零漏检，失败集中于范围外扩；\textbf{SMat-auto} 零提示即零反转、零严重外扩，主要风险是低对比目标的整株漏检，且交互（8 点）相比自动几无增益，说明其自动分支已抓对前景。
+
+	\subsection{分析与讨论}
+	本节回应课程要求的两点进一步讨论：其一，哪些\textbf{图像条件}会让某类模型明显退化（\S\ref{sec:fail_cond}）；其二，这些失败现象如何对应视觉认知中的\textbf{任务驱动目标选择、图形-背景分离、局部注意与细结构感知}（\S\ref{sec:fail_cog}）。
+
+	\subsubsection{哪些图像条件导致模型明显下降}\label{sec:fail_cond}
+	把前述失败与图像条件对应起来，可归纳出四种会让特定模型显著退化的条件：（i）\textbf{主体满框 / 前景占比过大}——ZIM 在此最易图形-背景反转（如 137 号泄漏率 0.88），全图 SAD 飙升，而具备对象级先验的 SDMatte、SMat 基本免疫；（ii）\textbf{目标与背景低对比}（如植株与土壤同色）——SMat-auto 易整株漏检（如 138 号），ZIM、SDMatte 亦受牵连；（iii）\textbf{背景出现同种植株（类内相似）}——加剧 F1/F2，使主体误认与范围外扩更频繁；（iv）\textbf{细裂 / 羽状 / 网状 / 半透明等复杂结构}——令含 ViTMatte 在内的\textbf{全部}模型在 Unknown 边界区同步退化。下面用按失败类别分组的指标定量印证这一对应。
+
 	\textbf{按失败类别的分组指标。} 为把失败归类与定量误差打通，表~\ref{tab:failgroup} 给出各失败类别子集上的指标（并集图集、四模型同集评测）。三点观察印证前述结论：（1）\textbf{均值被失败样本主导}，ZIM 在“简单样本”上全图 SAD 仅 28.1，与其余模型相当，但在 F1 子集上飙至 372.4，说明其全集 SAD 93.2 几乎全部由少数定位失败样本拉高；（2）\textbf{trimap 先验只对定位层失败免疫}——ViTMatte 在 F1/F2 子集上几乎不受影响（30.4/45.1，接近其全集 25.1），却在 F3--F5 结构子集上同步升高（59.2/43.1/64.9），可见结构层失败无法靠 trimap 弥补；（3）\textbf{Unknown 区 MAD 进一步分离两层}——在 F1/F2 子集上各模型的 Unknown 区误差升幅有限（ViTMatte 仅 0.150/0.154），说明定位失败主要恶化 Unknown 区\textbf{以外}的全图误差；而在 F3--F5 子集上含 ViTMatte 在内的 Unknown 区 MAD 普遍升高，定位到误差确来自边缘细节本身。
 
 	\input{tables/failure_group.tex}
 
-	\subsubsection{四个模型的优缺点总结}
-	综合定量与失败统计：\textbf{ViTMatte} 依赖外部 trimap，但在给定前景下细结构最稳、零定位层失败，适合可获得可靠 trimap 的场景；\textbf{ZIM} 的 SAM 式软 matte 头在“主体满框”的植株上系统性图形-背景反转，即便给定真值框与 8 个前景点仍难根除，是其误差偏高的主因；\textbf{SDMatte} 的扩散先验定量最好、零反转、零漏检，失败集中于范围外扩；\textbf{SMat-auto} 零提示即零反转、零严重外扩，主要风险是低对比目标的整株漏检，且交互（8 点）相比自动几无增益，说明其自动分支已抓对前景。
-
-	\subsection{从认知机制分析对比分析}
+	\subsubsection{失败现象与视觉认知机制的对应}\label{sec:fail_cog}
 	不同前端机制对应不同认知能力的强弱，因而在植物域犯不同的错误。\textbf{任务驱动目标选择}：当目标由外部 trimap“自上而下”给定时（ViTMatte），该步被旁路，零 F1/F2；需“自下而上”自主选择时，是否具备对象级语义先验直接决定成败——DINOv2 显著性（SMat）与扩散先验（SDMatte）能稳定选中满框主体，而 SAM 软 matte 头（ZIM）缺乏对象先验，易被更大更“干净”的背景区吸引而反转。\textbf{图形-背景分离}：F2 外扩正是该机制在同质场景下的边界归属错误，对象先验越强越不易外扩。\textbf{局部注意与细结构感知}：F3--F5 跨范式普遍存在，且不能由 trimap 先验弥补，说明它是独立于“目标选择”的更底层能力——这也解释了为何 SDMatte 在 Unknown 区可与 ViTMatte 比肩（扩散先验富含纹理/边缘细节），却仍在最细的网状结构上退化。
 
 	\section{植物抠图认知挑战样本补充标注}
