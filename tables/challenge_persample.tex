@@ -1,6 +1,6 @@
 \begin{table}[ht]
 	\centering
-	\caption{认知挑战样本逐张指标（9 张，统一 1024$\times$1024）。样本统一命名为 AIM-1$\sim$4（取自 AIM-500）与 CAM-1$\sim$5（校园自采），全文、各图与本表一致；括号内为其失败类与来源。上半部为全图 SAD（$\times10^{-3}$，越低越好），下半部为 Unknown 区 MAD（越低越好）。每行加粗为该样本最差模型。GT 为人工抠图+经典精修（与被测模型无关）。补充观测（捕获率/泄漏率）：ZIM 于 AIM-2 整图反转（leak 0.75）、SMat-auto 于 CAM-2 欠分割主体（capture 0.75）；F2 前景泄漏在校园阔叶植物上未复现，故无独立 F2 样本（CAM-3 实测降为易样本对照）。}
+	\caption{认知挑战样本逐张指标（9 张，统一 $1024^2$）。样本命名 AIM-1$\sim$4（取自 AIM-500）、CAM-1$\sim$5（校园自采），括号内为失败类与来源。上半部为全图 SAD（$\times10^{-3}$），下半部为 Unknown 区 MAD；均越低越好，每行加粗为该样本最差模型。GT 为人工抠图加经典精修（与被测模型无关）。逐张失败复现与捕获率/泄漏率分析见正文第~\ref{sec:challresult}~节。}
 	\label{tab:challenge}
 	\begin{tabular}{lccccc}
 		\toprule

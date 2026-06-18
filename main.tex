@@ -160,6 +160,27 @@
 
 	据此本文设计两条对照轴：一是\textbf{提示信息多少}：稠密 trimap（ViTMatte）/ 稀疏真值提示（ZIM/SDMatte/SMat-point）/ 零提示自主（SMat-auto），考察前景需要多少外部给定；二是在不输入 trimap 的方法内部，比较“SAM 自动 / 扩散 / 自动+交互”三种前端机制的图形-背景分离鲁棒性。所有真值提示均由真值程序化派生（真值框、真值最远点采样，信息对等而非手工点击），不引入额外人工监督。
 
+	\subsection{复现实验条件}\label{sec:repro}
+	为便于复现，表~\ref{tab:repro} 汇总各配置的关键实验条件：模型版本/骨干、checkpoint 来源、测试时输入提示、是否使用 trimap 与推理设置。所有模型统一在单张 24\,GB RTX\,3090 上推理，输入统一缩放至 $1024^2$、预测 alpha 统一存为与真值同名的 8-bit PNG，随机种子固定以保证真值派生提示（框/最远点采样）可复现。完整的环境、依赖版本与运行命令见随附代码仓库的 \texttt{MODELS.md}，核心代码见附录~\ref{app:code}。
+
+	\begin{table}[ht]
+		\centering
+		\caption{各配置的复现实验条件。所有模型输入统一缩放至 $1024^2$，单卡 RTX\,3090（24\,GB）推理，预测存 8-bit PNG。}
+		\label{tab:repro}
+		\scriptsize
+		\begin{tabularx}{\linewidth}{@{}l X X c X@{}}
+			\toprule
+			配置 & 版本/骨干 & checkpoint 来源 & trimap & 测试输入提示 / 推理设置 \\
+			\midrule
+			ViTMatte-B  & ViT-B + DIS-646      & 官方 GoogleDrive（369\,MB） & 是 & 逐像素统一 trimap（清洗真值膨胀/腐蚀生成） \\
+			ZIM-L       & ViT-L（ONNX）        & HF \texttt{naver-iv/zim-anything-vitl} & 否 & 真值框 + 8 个真值前景点（FPS）；onnxruntime-gpu \\
+			SDMatte     & SD2 U-Net 先验       & HF \texttt{LongfeiHuang/SDMatte}（12\,GB） & 否 & 真值框；单步确定性推理（$\approx1.9$\,s/图） \\
+			SMat-auto   & DINOv2-vits14        & 官方 GoogleDrive（308\,MB） & 否 & 零提示（cls-token 显著性分支，$\approx2.3$\,s/图） \\
+			SMat-pt8    & DINOv2-vits14        & 同上 & 否 & 8 个真值前景点（FPS，各渲染半径 20 圆盘） \\
+			\bottomrule
+		\end{tabularx}
+	\end{table}
+
 	\section{Baseline 评测结果}
 	本章遵循“先验证、再分模型、后对比”的顺序：首先在各模型原始论文相关基准上做跨数据集自验，排查实现与评测流程中的明显偏差（\S\ref{sec:crossval}）；再逐模型给出其在 PM 上测试过的全部变体指标并确定代表变体（\S\ref{sec:permodel}）；最后选各模型代表变体做统一跨模型对比与定性分析（\S\ref{sec:cross}）。
 
@@ -219,6 +240,26 @@
 	本章把植物抠图中的典型失败归为五类：主体识别失败、前景范围判断错误、边缘与细结构粗糙、半透明/绒毛、孔洞/网状结构。前两类属\textbf{定位层}失败（前景“是谁”判错），后三类属\textbf{结构层}失败（前景定位正确、但“细节”刻画不到位）。我们采用可复现的客观判据自动归类：对每个“图像\,$\times$\,模型”对，计算\textbf{捕获率}（真值前景区内预测 alpha 均值）与\textbf{泄漏率}（真值背景区内预测 alpha 均值）：捕获率低记为主体识别失败（F1），捕获率高而泄漏率高记为前景范围外扩（F2）；结构层失败则由真值的几何特征（半透明比例、孔洞比例、细结构腐蚀比例）配合 ViTMatte 的 Unknown 区误差判定。各类统计见表~\ref{tab:failstats}。
 
 	需要说明的是，最初框架中的“类内相似干扰”在本数据集上并不构成\textbf{独立}的失败类型：它更多是\textbf{诱因}：当背景出现同种植株时会加剧 F1/F2，但其表象仍落入主体误认或范围外扩，故并入 F1/F2 讨论而不单列。
+
+	为把全文分散的分析收拢为一条清晰主线，表~\ref{tab:failmap} 将五类失败、其客观判据、所对应的视觉认知机制与代表性证据样本逐行对齐：定位层（F1/F2）为 trimap-free 方法专属、对应目标选择与图形-背景分离；结构层（F3--F5）为全模型共性、对应局部注意与细结构感知，即便给定 trimap 亦不能幸免。
+
+	\begin{table}[ht]
+		\centering
+		\caption{植物抠图失败类型、客观判据、对应视觉认知机制与代表证据。F1/F2 为定位层（trimap-free 专属），F3--F5 为结构层（全模型共性）。}
+		\label{tab:failmap}
+		\small
+		\begin{tabularx}{\linewidth}{@{}l l X X X@{}}
+			\toprule
+			类型 & 失败 & 客观判据 & 认知机制 & 代表证据 \\
+			\midrule
+			F1 & 主体识别   & 捕获率低（前景区 alpha 均值低）          & 任务驱动目标选择          & ZIM 认错/反转、SMat-auto 整株漏检（58/138 号） \\
+			F2 & 前景范围   & 捕获率高且泄漏率高（背景区 alpha 均值高） & 图形-背景分离             & ZIM 满框外扩（137 号，泄漏 0.88）、SDMatte（31/108 号） \\
+			F3 & 边缘细结构 & 细结构比例高且 Unknown 区 MAD 高         & 局部细节注意 + 细结构感知 & 文竹 CAM-5、AIM-2 羽状叶（含 ViTMatte 同退化） \\
+			F4 & 半透明/绒毛 & 半透明比例高（soft 大）                  & 透明度估计 + 细结构感知   & 蒲公英绒球 AIM-3（soft $=0.81$） \\
+			F5 & 孔洞/网状  & 孔洞比例高（hole 大），常与 F3 重叠      & 细结构感知 + 拓扑/上下文推理 & 镂空枝叶 AIM-4（hole $=0.50$）、细裂叶 63/18/94 号 \\
+			\bottomrule
+		\end{tabularx}
+	\end{table}
 
 	\begin{figure}[htbp]
 		\centering
@@ -348,13 +389,20 @@
 	新增样本完成后，将四个代表模型按与 PM 相同的协议重跑：ViTMatte 使用由新增真值生成的统一 trimap，ZIM、SDMatte、SMat 使用由真值程序化派生的框/点提示。评价指标仍报告全图与 Unknown 区域两套 SAD/MSE/MAD，并保存 RGB、真值 alpha、预测 alpha 和误差图。验证时不只看平均指标，还要逐张确认其对应的 F1--F5 failure 是否复现：若定位层失败在新样本上重复出现，可支持“任务驱动目标选择/图形-背景分离”解释；若给定 trimap 的 ViTMatte 仍在细结构样本上退化，则可支持“结构层失败独立于目标选择”的结论。
 
 	\subsection{实测结果：困难样本的失败模式以及指标}\label{sec:challresult}
-	将上述 9 张样本统一缩放至 $1024^2$，按与 PM 相同的协议重跑五个配置（ViTMatte-B、ZIM-L、SDMatte、SMat-auto 与交互的 SMat-point8）。逐张定性对比见图~\ref{fig:challenge}，逐张指标见表~\ref{tab:challenge}（每行加粗为该样本最差模型）。由于补充样本数量有限（每类 1$\sim$3 张），本节以逐样本定性与指标为主，不做分组均值统计。
+	将上述 9 张样本统一缩放至 $1024^2$，按与 PM 相同的协议重跑五个配置（ViTMatte-B、ZIM-L、SDMatte、SMat-auto 与交互的 SMat-point8）。逐张定性对比见图~\ref{fig:challenge_aim}（AIM 样本）与图~\ref{fig:challenge_campus}（校园自采样本），逐张指标见表~\ref{tab:challenge}（每行加粗为该样本最差模型）。由于补充样本数量有限（每类 1$\sim$3 张），本节以逐样本定性与指标为主，不做分组均值统计。
 
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\linewidth]{figures/challenge.pdf}
-		\caption{植物抠图认知挑战样本（9 张）$\times$ 五模型定性对比。列为 输入\,$|$\,真值\,$|$\,ViTMatte-B\,$|$\,ZIM-L\,$|$\,SDMatte\,$|$\,SMat-auto\,$|$\,SMat-pt8；行标为统一样本名 AIM-1$\sim$4 / CAM-1$\sim$5（括号内为失败类，F1* 表示实测改标），与表~\ref{tab:challenge} 一致。真值为人工抠图加经典精修、与被评测模型无关；具体失败复现见正文分析。}
-		\label{fig:challenge}
+		\includegraphics[width=\linewidth]{figures/challenge_aim.pdf}
+		\caption{AIM-500 通用域参照样本（AIM-1$\sim$4）$\times$ 五模型定性对比。列为 输入\,$|$\,真值\,$|$\,ViTMatte-B\,$|$\,ZIM-L\,$|$\,SDMatte\,$|$\,SMat-auto\,$|$\,SMat-pt8；行标括号内为失败类，与表~\ref{tab:challenge} 一致。真值为官方专业标注。}
+		\label{fig:challenge_aim}
+	\end{figure}
+
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\linewidth]{figures/challenge_campus.pdf}
+		\caption{校园自采样本（CAM-1$\sim$5）$\times$ 五模型定性对比。列同图~\ref{fig:challenge_aim}；行标括号内为失败类（F1* 表示实测改标，easy 为易样本对照）。真值为人工抠图加经典精修、与被评测模型无关；具体失败复现见正文分析。}
+		\label{fig:challenge_campus}
 	\end{figure}
 
 	\input{tables/challenge_persample.tex}
@@ -399,12 +447,12 @@
 	\subsection{可改进方向}
 	后续改进可围绕两条线展开：定位层上，用 box/point/text prompt、目标参考图或语义分割先验约束“目标植株”定义，减少同类背景被并入；结构层上，引入边界、骨架或局部 patch 监督，并增加细裂叶片、绒毛、孔洞等植物难例。更系统的植物认知挑战集也有必要单独构建，以避免只在平均指标上优化而忽略真实难点。
 
-	\section{写在最后}
+	\section{结论与展望}
     通过本次课程设计实验，不同 baseline 在主体选择、范围判断和细结构保持上的差异，我直观地理解了任务驱动目标选择、局部注意和细结构感知等课程概念在真实视觉任务中的体现。由于时间和算力有限，本文仍有不足，例如新增挑战样本规模较小、改进策略还比较初步。感谢老师们的指导，希望后续该课程持续引进实践性强的课设题目，让学弟学妹们都能在课设中提高实践能力。由于篇幅有限，完整代码以及图片可以在此获取https://github.com/Greentght/plant-matting.git
 	\bibliography{Bibs/reference.bib}
 
 	\begin{appendices}
-	\section{核心代码}
+	\section{核心代码}\label{app:code}
 	本附录摘录本文实验中三段最关键的代码（均加中文注释，为便于排版略去命令行解析等样板，完整版见前述 GitHub 仓库）：（A.1）数据侧的 alpha 清洗与 trimap 生成，是保证四模型评测公平、可比的前提；（A.2）校园自采认知挑战样本的自动标注流程，全程经典、与被评测模型无关，以避免评测泄漏；（A.3）针对 F3 边缘细结构失败设计的与模型无关的边界两步精修模块。
 
 	\subsection{Alpha 清洗与 trimap 生成}
