@@ -478,7 +478,7 @@
 			\vspace*{4em}
 			\includegraphics[height=1.61cm]{\HGP@titlecolor}\\
 			\vspace*{2em}
-			{\zihao{1} \huawenzhongsong 模式识别与机器学习课程设计报告}\\
+			{\zihao{1} \huawenzhongsong 视觉认知工程课程设计报告}\\
 			\vspace{6em}
 			{\zihao{2} \bfseries \@title}\\
 			\vspace{6em}
