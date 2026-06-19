@@ -194,16 +194,16 @@
 		\centering
 		\caption{各配置的复现实验条件。所有模型输入统一缩放至 $1024^2$，单卡 RTX\,3090（24\,GB）推理，预测存 8-bit PNG。}
 		\label{tab:repro}
-		\scriptsize
-		\begin{tabularx}{\linewidth}{@{}l X X c X@{}}
+		% \scriptsize
+		\begin{tabularx}{\linewidth}{@{}l l X c X@{}}
 			\toprule
-			配置 & 版本/骨干 & checkpoint 来源 & trimap & 测试输入提示 / 推理设置 \\
+			配置 & 版本/骨干 & trimap & 测试输入提示 / 推理设置 \\
 			\midrule
-			ViTMatte-B  & ViT-B + DIS-646      & 官方 GoogleDrive（369\,MB） & 是 & 逐像素统一 trimap（清洗真值膨胀/腐蚀生成） \\
-			ZIM-L       & ViT-L（ONNX）        & HF \texttt{naver-iv/zim-anything-vitl} & 否 & 真值框 + 8 个真值前景点（FPS）；onnxruntime-gpu \\
-			SDMatte     & SD2 U-Net 先验       & HF \texttt{LongfeiHuang/SDMatte}（12\,GB） & 否 & 真值框；单步确定性推理（$\approx1.9$\,s/图） \\
-			SMat-auto   & DINOv2-vits14        & 官方 GoogleDrive（308\,MB） & 否 & 零提示（cls-token 显著性分支，$\approx2.3$\,s/图） \\
-			SMat-pt8    & DINOv2-vits14        & 同上 & 否 & 8 个真值前景点（FPS，各渲染半径 20 圆盘） \\
+			ViTMatte-B  & ViT-B + DIS-646   & 是 & 逐像素统一 trimap（清洗真值膨胀/腐蚀生成） \\
+			ZIM-L       & ViT-L（ONNX）        & 否 & 真值框 + 8 个真值前景点（FPS）；onnxruntime-gpu \\
+			SDMatte     & SD2 U-Net 先验       & 否 & 真值框；单步确定性推理（$\approx1.9$\,s/图） \\
+			SMat-auto   & DINOv2-vits14        & 否 & 零提示（cls-token 显著性分支，$\approx2.3$\,s/图） \\
+			SMat-pt8    & DINOv2-vits14        & 否 & 8 个真值前景点（FPS，各渲染半径 20 圆盘） \\
 			\bottomrule
 		\end{tabularx}
 	\end{table}
