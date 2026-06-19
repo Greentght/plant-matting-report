@@ -172,6 +172,7 @@
 		\centering
 		\caption{各配置在测试时获得的真值派生提示信息（从多到少）。除 SMat-auto 外均为真值条件化的弱监督，不能视作完全自主；比较模型时须结合其拿到的提示信息量一并解读。}
 		\label{tab:cueinfo}
+		\small
 		\begin{tabular}{lll}
 			\toprule
 			配置 & 测试时的真值派生提示 & 信息量 \\
@@ -194,8 +195,8 @@
 		\centering
 		\caption{各配置的复现实验条件。所有模型输入统一缩放至 $1024^2$，单卡 RTX\,3090（24\,GB）推理，预测存 8-bit PNG。}
 		\label{tab:repro}
-		% \scriptsize
-		\begin{tabularx}{\linewidth}{@{}l l X c X@{}}
+		\small
+		\begin{tabularx}{\linewidth}{@{}l l c X@{}}
 			\toprule
 			配置 & 版本/骨干 & trimap & 测试输入提示 / 推理设置 \\
 			\midrule
