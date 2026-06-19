@@ -140,6 +140,29 @@
 		\end{tabularx}
 	\end{table}
 
+	其中 Grad 与 Conn 按 alpha matting 基准中的常用实现计算。Grad 先用高斯导数算子 $\nabla_\sigma$ 提取 alpha 梯度，再累加预测与真值的梯度差：
+	\begin{equation}
+		\mathrm{Grad}=\frac{1}{1000}\sum_{i\in\Omega}
+		\left\|\nabla_\sigma\hat{\alpha}_i-\nabla_\sigma\alpha_i\right\|_2^2 .
+	\end{equation}
+	Conn 用多阈值连通性比较预测 alpha 与真值 alpha。令阈值集合 $\Theta=\{0,0.1,\ldots,1.0\}$，$M_\theta$ 为集合 $\{i\in\Omega\mid \alpha_i\geq\theta,\hat{\alpha}_i\geq\theta\}$ 中的最大连通分量，并令
+	\begin{equation}
+		l_i=\max\{\theta\in\Theta\mid i\in M_\theta\}.
+	\end{equation}
+	若某像素不属于任一阈值下的最大连通分量，则取 $l_i=0$。对任一 alpha 图 $a$，定义 $d_i(a)=a_i-l_i$，以及
+	\begin{equation}
+		\phi_i(a)=
+		\begin{cases}
+			1, & d_i(a)<0.15,\\
+			1-d_i(a), & d_i(a)\geq0.15.
+		\end{cases}
+	\end{equation}
+	则 Conn 误差为
+	\begin{equation}
+		\mathrm{Conn}=\frac{1}{1000}\sum_{i\in\Omega}
+		\left|\phi_i(\hat{\alpha})-\phi_i(\alpha)\right|.
+	\end{equation}
+
 	每项指标同时给出\textbf{全图（whole）}与\textbf{未知区域（Unknown）}两套数值。两者的区别正是本文分析的关键：全图指标在所有像素上计算，因此会把“该不该把某片区域当前景”的判断错误（即图形-背景分离、主体选择是否正确）一并计入，反映整体前景判定能力；Unknown 区域指标只在上文定义的过渡带（trimap 中值为 128 的环带）上计算，剔除了大片确定前景/背景区，从而专门度量交界处的\textbf{边缘细节质量}。同一模型两套数值的分歧（如全图差但 Unknown 区好），即可定位其误差是来自前景范围判错还是边缘刻画不准。该 Unknown 区域由清洗后真值生成的同一套统一 trimap 定义；除 ViTMatte 将 trimap 作为输入外，其余模型均不输入 trimap，仅在评测阶段套用该区域划分，以保证 trimap-free 模型也能与 ViTMatte 在相同区域被公平比较。
 
 	\subsection{实验设计}
@@ -332,6 +355,7 @@
 		r_{\mathrm{thin}}=\frac{|B\setminus\operatorname{erode}(B;K)|}{|B|}.
 	\end{equation}
 	其中 $\operatorname{fill}(B)$ 表示对前景掩码做孔洞填充后的区域，$\operatorname{fill}(B)\setminus B$ 即被前景包围的内部背景孔洞；$\operatorname{erode}(B;K)$ 表示用固定结构元素 $K$ 腐蚀前景掩码，腐蚀后损失比例越高，说明细枝、叶尖、网状结构等小尺度前景占比越大。因此，F4 对应 $r_{\mathrm{soft}}$ 较高的半透明/绒毛样本，F5 对应 $r_{\mathrm{hole}}$ 较高的孔洞/网状样本，F3 则主要对应 $r_{\mathrm{thin}}$ 较高的细结构样本。
+	具体阈值口径如下：定位层先按捕获率判定，若 $C^{(m)}<0.8$，记为 F1；否则若 $C^{(m)}\geq0.8$ 且 $L^{(m)}>0.10$，记为 F2。结构层不按逐模型分别计数，且类别允许重叠；令 $E_U^{(\mathrm{V})}$ 表示 ViTMatte 在 Unknown 区域上的 MAD，若 $E_U^{(\mathrm{V})}\geq0.18$ 且 $r_{\mathrm{thin}}\geq0.35$，记为 F3；若 $E_U^{(\mathrm{V})}\geq0.18$ 且 $r_{\mathrm{soft}}\geq0.10$，记为 F4；若 $E_U^{(\mathrm{V})}\geq0.18$ 且 $r_{\mathrm{hole}}\geq0.03$，记为 F5。该优先级保证图形-背景反转这类“捕获率低但泄漏率高”的样本归入 F1，而主体已捕获、额外纳入背景的样本归入 F2。
 
 	\input{tables/failure_stats.tex}
 
