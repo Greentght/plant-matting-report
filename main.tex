@@ -316,6 +316,23 @@
 	\subsubsection{失败模式统计表}
 	表~\ref{tab:failstats} 汇总五类失败在四模型上的分布。可见两条清晰规律：其一，\textbf{定位层失败（F1/F2）是 trimap-free 方法专属}，ViTMatte 借 trimap 先验全部为零；其二，三种 trimap-free 方法的失败谱\textbf{各具特征}：ZIM 同时高发 F1 与 F2（唯一会认错主体/反转者），SDMatte 仅有 F2 而无 F1（“找得对、圈得大”），SMat-auto 仅有 F1 漏检而无严重外扩与反转（“要么抓干净、要么整片丢”）。结构层失败（F3--F5）则不区分范式，为全模型共性。
 
+	为使表~\ref{tab:failstats} 的归类判据可复现，本文将真值 alpha 记为 $A$、模型预测记为 $\hat{A}^{(m)}$，二者均归一化到 $[0,1]$；$\Omega$ 为全图像素集合，$B=\{p\in\Omega\mid A_p>0.5\}$ 为硬前景掩码，$G=\{p\in\Omega\mid A_p\leq0.05\}$ 为确定背景。定位层失败用捕获率 $C^{(m)}$ 与泄漏率 $L^{(m)}$ 判断：
+	\begin{equation}
+		C^{(m)}=\frac{1}{|B|}\sum_{p\in B}\hat{A}^{(m)}_p,\qquad
+		L^{(m)}=\frac{1}{|G|}\sum_{p\in G}\hat{A}^{(m)}_p .
+	\end{equation}
+	结构层失败不按逐模型分别计数，而是先由真值 alpha 的几何属性筛选候选图像，再结合 ViTMatte 的 Unknown 区误差确认是否确实退化。具体地，半透明比例、孔洞比例和细结构腐蚀比例分别定义为
+	\begin{equation}
+		\begin{aligned}
+			r_{\mathrm{soft}}&=\frac{|\{p\in\Omega\mid 0.05<A_p<0.95\}|}{|\{p\in\Omega\mid A_p>0.05\}|},\\
+			r_{\mathrm{hole}}&=\frac{|\operatorname{fill}(B)\setminus B|}{|\operatorname{fill}(B)|},
+		\end{aligned}
+	\end{equation}
+	\begin{equation}
+		r_{\mathrm{thin}}=\frac{|B\setminus\operatorname{erode}(B;K)|}{|B|}.
+	\end{equation}
+	其中 $\operatorname{fill}(B)$ 表示对前景掩码做孔洞填充后的区域，$\operatorname{fill}(B)\setminus B$ 即被前景包围的内部背景孔洞；$\operatorname{erode}(B;K)$ 表示用固定结构元素 $K$ 腐蚀前景掩码，腐蚀后损失比例越高，说明细枝、叶尖、网状结构等小尺度前景占比越大。因此，F4 对应 $r_{\mathrm{soft}}$ 较高的半透明/绒毛样本，F5 对应 $r_{\mathrm{hole}}$ 较高的孔洞/网状样本，F3 则主要对应 $r_{\mathrm{thin}}$ 较高的细结构样本。
+
 	\input{tables/failure_stats.tex}
 
 
